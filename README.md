@@ -26,3 +26,10 @@ AI-SearchEngine/
 ├── scripts/            # Scripts auxiliares para entrenamiento y despliegue
 ├── tests/              # Pruebas unitarias y de integración
 └── README.md           # Documentación del proyecto
+
+### 🥳 Instrucciones para ejecutar el proyecto
+1. Asegúrate de tener Python 3 instalado en tu entorno global.
+2. Crea un directorio con el nombre del proyecto y accede a él desde la terminal de Python 3.
+3. Clona el repositorio utilizando el siguiente comando: git clone git@github.com:InstaCL/AI-SearchEngine.git .
+4. Instala las dependencias ejecutando el siguiente comando en la terminal de Python: pip install -r requirements.txt
+5. Se recomienda usar Visual Studio Code para la ejecución del proyecto.
