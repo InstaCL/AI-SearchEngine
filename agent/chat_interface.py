@@ -3,7 +3,7 @@ from pinecone_module.pinecone_manager import search_similar_products
 
 def interact_with_agent(query):
     """
-    Busca productos en Pinecone antes de consultar a OpenAI.
+    Busca productos en Pinecone antes de consultar a OpenAI, optimizando la respuesta.
     """
     print("\n🤖 AI-SearchEngine: Buscando productos en Pinecone...")
 
@@ -12,19 +12,20 @@ def interact_with_agent(query):
 
     if not similar_products:
         print("❌ No se encontraron productos similares en Pinecone.")
-        return "No se encontraron productos."
+        prompt = f"""Un usuario está buscando: '{query}', pero la base de datos no tiene productos exactos para esa descripción.
 
-    # Construir el prompt con los productos encontrados
-    product_list = "\n".join(f"- {product}" for product in similar_products)
-    prompt = f"""Los siguientes productos fueron encontrados en la base de datos:
+En lugar de inventar productos, sugiere una solución alternativa o pregunta si quiere explorar otra categoría de productos que sí estén disponibles.
+"""
+        response = generate_response(prompt)
+    else:
+        product_list = "\n".join(f"- {product}" for product in similar_products)
+        prompt = f"""Estos son los productos más relevantes encontrados en la base de datos para la consulta: '{query}'
+
 {product_list}
 
-Basado en estos productos, responde a la consulta del usuario:
-{query}
+Genera una respuesta profesional explicando por qué estos productos pueden ser útiles para la necesidad del usuario. Si no hay coincidencias exactas, sugiere productos similares con una breve explicación.
 """
-
-    # Obtener respuesta de OpenAI
-    response = generate_response(prompt)
+        response = generate_response(prompt)
 
     print("\n🛒 Productos recomendados:")
     print(response)
