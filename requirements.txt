@@ -32,3 +32,5 @@ zstandard==0.23.0
 pinecone
 python-dotenv
 pinecone-client
+fastapi
+uvicorn
