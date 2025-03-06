@@ -1,0 +1,49 @@
+# Archivos compilados
+*.pyc
+*.pyo
+__pycache__/
+
+# Entornos virtuales
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Archivos de configuración de IDE
+.vscode/
+.idea/
+*.swp
+
+# Archivos de distribución
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Archivos de pruebas de pytest
+.cache/
+
+# Archivos de configuración de Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Archivos de configuración de pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Archivos de configuración de cobertura de pruebas
+.coverage
+.coverage.*
+*.cover
+*.tox/
+*.nox/
+*.hypothesis/
+
+# Archivos temporales
+*.bak
+*.tmp
+*.swp
+
+# Archivo de configuracion y API Keys
+.env
