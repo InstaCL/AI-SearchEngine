@@ -24,4 +24,4 @@ resultados = query_vector(query_vector_embedding, top_k=5)
 print("\nProductos recomendados:")
 for match in resultados["matches"]:
     producto = match["metadata"]
-    print(f"- {producto['nombre']} | {producto['categoria']} | Talla {producto['talla']} | Precio: {producto['precio']} | Similitud: {match['score']:.4f}")
+    print(f"- {producto['title']} | {producto['categoria']} | Talla {producto['talla']} | Precio: {producto['precio']} | Similitud: {match['score']:.4f}")
