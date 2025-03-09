@@ -1,33 +1,23 @@
 from agent.openai_agent import generate_response
 from pinecone_module.pinecone_manager import search_similar_products
 
-def interact_with_agent(query):
-    """
-    Busca productos en Pinecone antes de consultar a OpenAI, optimizando la respuesta.
-    """
-    print("\n🤖 AI-SearchEngine: Buscando productos en Pinecone...")
+def interact_with_agent(query, empresa_id=None):
+    print("🤖 AI-SearchEngine: Buscando productos en Pinecone...")
 
-    # Buscar productos en Pinecone
-    similar_products = search_similar_products(query, top_k=5)
+    # Buscar productos relevantes según la empresa
+    similar_products = search_similar_products(query, top_k=5, empresa_id=empresa_id)
 
     if not similar_products:
-        print("❌ No se encontraron productos similares en Pinecone.")
-        prompt = f"""Un usuario está buscando: '{query}', pero la base de datos no tiene productos exactos para esa descripción.
+        return "Lo siento, no encontré productos relacionados en tu catálogo. ¿Quieres que revise otra categoría o tipo de producto?"
 
-En lugar de inventar productos, sugiere una solución alternativa o pregunta si quiere explorar otra categoría de productos que sí estén disponibles.
+    # Crear un mensaje personalizado para OpenAI
+    prompt = f"""Eres un asistente útil de una tienda ecommerce de productos tecnológicos. 
+El cliente ha preguntado: "{query}"
+
+Estos son los productos disponibles relacionados con su consulta:
+{chr(10).join([f"- {producto}" for producto in similar_products])}
+
+Basado en esta información, responde al cliente de forma clara, útil y comercial, explicando por qué esos productos son útiles y haciendo sugerencias si es necesario.
 """
-        response = generate_response(prompt)
-    else:
-        product_list = "\n".join(f"- {product}" for product in similar_products)
-        prompt = f"""Estos son los productos más relevantes encontrados en la base de datos para la consulta: '{query}'
 
-{product_list}
-
-Genera una respuesta profesional explicando por qué estos productos pueden ser útiles para la necesidad del usuario. Si no hay coincidencias exactas, sugiere productos similares con una breve explicación.
-"""
-        response = generate_response(prompt)
-
-    print("\n🛒 Productos recomendados:")
-    print(response)
-
-    return response
+    return generate_response(prompt)
