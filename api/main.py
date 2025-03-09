@@ -5,6 +5,8 @@ from agent.chat_interface import interact_with_agent
 from database.database import get_db
 from database.models import Cliente, Empresa, Base
 from passlib.context import CryptContext
+from client.fetch_products import fetch_products
+from pinecone_module.pinecone_manager import insert_product
 import traceback
 
 app = FastAPI()
@@ -99,4 +101,53 @@ def registrar_empresa(
     return {
         "message": "✅ Registro exitoso. Acceso habilitado.",
         "empresa_id": nueva_empresa.id
+    }
+
+
+@app.post("/login")
+def login_empresa(correo: str, password: str, db: Session = Depends(get_db)):
+    """
+    Permite a una empresa iniciar sesión validando correo, contraseña y estado de pago.
+    """
+    empresa = db.query(Empresa).filter(Empresa.correo == correo).first()
+
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no registrada.")
+
+    if not pwd_context.verify(password, empresa.password_hash):
+        raise HTTPException(status_code=401, detail="❌ Contraseña incorrecta.")
+
+    if empresa.estado_pago != "aprobado":
+        raise HTTPException(status_code=403, detail="⚠️ Acceso denegado: pago pendiente.")
+
+    return {
+        "message": f"✅ Bienvenido {empresa.nombre_empresa}",
+        "empresa_id": empresa.id,
+        "tipo_productos": empresa.tipo_productos
+    }
+
+@app.post("/sync-empresa-productos")
+def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    """
+    Sincroniza productos para una empresa específica usando su ID.
+    """
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+
+    # Simulamos la obtención de productos desde el endpoint (puedes reemplazar luego por fetch real desde API)
+    productos = fetch_products()  # aquí aún usamos productos simulados
+
+    for producto in productos:
+        insert_product(
+            product_id=producto["id"],
+            product_name=producto["title"],
+            description=producto["description"],
+            empresa_id=empresa_id
+        )
+
+    return {
+        "message": f"✅ Productos sincronizados correctamente para {empresa.nombre_empresa}",
+        "total": len(productos)
     }
