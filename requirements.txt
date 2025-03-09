@@ -36,3 +36,4 @@ fastapi
 uvicorn
 python-multipart
 langchain
+passlib[bcrypt]
