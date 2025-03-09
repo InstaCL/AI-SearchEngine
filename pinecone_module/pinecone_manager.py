@@ -20,32 +20,51 @@ def generate_embedding(text):
     )
     return response.data[0].embedding
 
-def insert_product(product_id, product_name, description):
+def insert_product(product_id, product_name, description, empresa_id=None):
     """
-    Inserta un producto en Pinecone.
+    Inserta un producto en Pinecone, incluyendo el empresa_id en los metadatos.
     """
     embedding = generate_embedding(product_name + " " + description)
-    index.upsert(vectors=[{"id": str(product_id), "values": embedding, "metadata": {"title": product_name, "description": description}}])
+
+    metadata = {
+        "title": product_name,
+        "description": description
+    }
+
+    if empresa_id:
+        metadata["empresa_id"] = str(empresa_id)  # se guarda como string
+
+    index.upsert(vectors=[{
+        "id": str(product_id),
+        "values": embedding,
+        "metadata": metadata
+    }])
+
     print(f"✅ Producto insertado en Pinecone: {product_name}")
 
-def search_similar_products(query, top_k=5):
+def search_similar_products(query, top_k=5, empresa_id=None):
     """
-    Realiza una búsqueda en Pinecone y devuelve productos relevantes.
+    Realiza una búsqueda en Pinecone y devuelve productos relevantes filtrados por empresa_id.
     """
-    # Convertimos la consulta en un embedding usando el mismo modelo de OpenAI
     query_embedding = generate_embedding(query)
 
-    # Ejecutamos la búsqueda en Pinecone
-    results = index.query(vector=query_embedding, top_k=top_k, include_metadata=True)
+    filter_query = {}
+    if empresa_id:
+        filter_query = {"empresa_id": {"$eq": str(empresa_id)}}
 
-    # Filtrar solo laptops
+    results = index.query(
+        vector=query_embedding,
+        top_k=top_k,
+        include_metadata=True,
+        filter=filter_query
+    )
+
     filtered_products = []
-    for match in results["matches"]:
-        title = match["metadata"].get("title", "Producto sin título")
-        description = match["metadata"].get("description", "")
-
-        if "laptop" in title.lower() or "laptop" in description.lower():
-            filtered_products.append(title)
+    for match in results.matches:
+        metadata = match.metadata
+        title = metadata.get("title", "Producto sin título")
+        filtered_products.append(title)
 
     return filtered_products
+
     
