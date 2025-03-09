@@ -3,24 +3,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from agent.chat_interface import interact_with_agent
 from database.database import get_db
-from database.models import Cliente, Base
+from database.models import Cliente, Empresa, Base
+from passlib.context import CryptContext
 import traceback
 
 app = FastAPI()
 
-# 🔥 SOLUCIÓN: Habilitar CORS para permitir conexiones desde React
+# 🔐 Contexto para hasheo de contraseñas
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# 🔥 Habilitar CORS para conexión con React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Permite solicitudes desde React
+    allow_origins=["http://localhost:3000"],  # Permitir solicitudes desde React
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos los métodos (GET, POST, etc.)
-    allow_headers=["*"],  # Permitir todos los encabezados
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
+# 🏠 Endpoint raíz
 @app.get("/")
 def home():
     return {"message": "Bienvenido a AI-SearchEngine API 🚀"}
 
+# 🔍 Búsqueda de productos
 @app.get("/search")
 def search(query: str):
     """
@@ -34,8 +40,7 @@ def search(query: str):
         traceback.print_exc()
         return {"error": "Ocurrió un error en el servidor", "details": str(e)}
 
-# 📌 NUEVO: Endpoints para manejar clientes
-
+# 🛠 Endpoints para manejar clientes
 @app.post("/clientes")
 def crear_cliente(nombre: str, api_key: str, endpoint_productos: str, db: Session = Depends(get_db)):
     """
@@ -54,3 +59,44 @@ def obtener_clientes(db: Session = Depends(get_db)):
     """
     clientes = db.query(Cliente).all()
     return clientes
+
+# 🏢 Registro de Empresas
+@app.post("/registro")
+def registrar_empresa(
+    nombre_empresa: str,
+    rut: str,
+    correo: str,
+    tipo_productos: str,
+    password: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Registra una nueva empresa con contraseña encriptada.
+    Simula que el estado de pago está aprobado.
+    """
+    # Verificar duplicados
+    if db.query(Empresa).filter(Empresa.correo == correo).first():
+        raise HTTPException(status_code=400, detail="⚠️ Correo ya registrado.")
+    if db.query(Empresa).filter(Empresa.rut == rut).first():
+        raise HTTPException(status_code=400, detail="⚠️ RUT ya registrado.")
+
+    # Hashear la contraseña
+    password_hash = pwd_context.hash(password)
+
+    nueva_empresa = Empresa(
+        nombre_empresa=nombre_empresa,
+        rut=rut,
+        correo=correo,
+        tipo_productos=tipo_productos,
+        password_hash=password_hash,
+        estado_pago="aprobado"  # Simulación del pago exitoso
+    )
+
+    db.add(nueva_empresa)
+    db.commit()
+    db.refresh(nueva_empresa)
+
+    return {
+        "message": "✅ Registro exitoso. Acceso habilitado.",
+        "empresa_id": nueva_empresa.id
+    }
