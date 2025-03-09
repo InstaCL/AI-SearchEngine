@@ -30,12 +30,12 @@ def home():
 
 # 🔍 Búsqueda de productos
 @app.get("/search")
-def search(query: str):
+def search(query: str, empresa_id: int, db: Session = Depends(get_db)):
     """
-    Endpoint para buscar productos basados en la consulta del usuario.
+    Endpoint para buscar productos de una empresa específica.
     """
     try:
-        response = interact_with_agent(query)
+        response = interact_with_agent(query, empresa_id=empresa_id)
         return {"query": query, "response": response}
     except Exception as e:
         print("❌ ERROR EN LA API:")
