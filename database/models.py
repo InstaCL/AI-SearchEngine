@@ -12,3 +12,16 @@ class Cliente(Base):
     api_key = Column(String, unique=True, nullable=False)
     endpoint_productos = Column(String, nullable=False)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
+
+
+class Empresa(Base):
+    __tablename__ = "empresas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre_empresa = Column(String, nullable=False)
+    rut = Column(String, nullable=False, unique=True)
+    correo = Column(String, unique=True, nullable=False)
+    tipo_productos = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    estado_pago = Column(String, default="aprobado")  # Simulación por ahora
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
