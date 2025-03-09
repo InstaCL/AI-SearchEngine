@@ -34,3 +34,5 @@ python-dotenv
 pinecone-client
 fastapi
 uvicorn
+python-multipart
+langchain
