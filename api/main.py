@@ -135,10 +135,23 @@ def actualizar_credenciales(
     }
 
 # 📋 Obtener lista de empresas registradas
-@app.get("/empresas")
-def obtener_empresas(db: Session = Depends(get_db)):
-    empresas = db.query(Empresa).all()
-    return empresas
+@app.get("/empresas/{empresa_id}")
+def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    return {
+        "id": empresa.id,
+        "nombre_empresa": empresa.nombre_empresa,
+        "rut": empresa.rut,
+        "correo": empresa.correo,
+        "tipo_productos": empresa.tipo_productos,
+        "estado_pago": empresa.estado_pago,
+        "api_key_openai": empresa.api_key_openai,
+        "api_key_pinecone": empresa.api_key_pinecone,
+        "endpoint_productos": empresa.endpoint_productos,
+        "fecha_registro": empresa.fecha_registro
+    }
 
 
 @app.put("/empresas/{empresa_id}/configuracion")
@@ -165,3 +178,9 @@ def actualizar_configuracion_tecnica(
         "message": "✅ Configuración técnica actualizada correctamente",
         "empresa_id": empresa.id
     }
+
+# 📋 Obtener listado de empresas registradas
+@app.get("/empresas")
+def obtener_empresas(db: Session = Depends(get_db)):
+    empresas = db.query(Empresa).all()
+    return empresas
