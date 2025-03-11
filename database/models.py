@@ -4,16 +4,6 @@ from datetime import datetime
 
 Base = declarative_base()
 
-class Cliente(Base):
-    __tablename__ = "clientes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String, unique=True, nullable=False)
-    api_key = Column(String, unique=True, nullable=False)
-    endpoint_productos = Column(String, nullable=False)
-    fecha_registro = Column(DateTime, default=datetime.utcnow)
-
-
 class Empresa(Base):
     __tablename__ = "empresas"
 
@@ -23,5 +13,8 @@ class Empresa(Base):
     correo = Column(String, unique=True, nullable=False)
     tipo_productos = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
-    estado_pago = Column(String, default="aprobado")  # Simulación por ahora
+    estado_pago = Column(String, default="pendiente")  # por defecto pendiente, se actualizará a "aprobado" luego del pago
+    api_key_openai = Column(String, nullable=True)
+    api_key_pinecone = Column(String, nullable=True)
+    endpoint_productos = Column(String, nullable=True)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
