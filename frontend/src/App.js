@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import RegisterEmpresa from "./components/RegisterEmpresa";
 import AdminPanel from './components/AdminPanel';
 import EmpresaDetail from "./components/EmpresaDetail";
+import EmpresaDashboard from "./components/EmpresaDashboard";
+import Login from "./components/Login";
 
 const App = () => {
   return (
@@ -15,6 +17,8 @@ const App = () => {
         <Route path="/registro" element={<RegisterEmpresa />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/admin/empresa/:id" element={<EmpresaDetail />} />
+        <Route path="/dashboard" element={<EmpresaDashboard />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </Router>
   );
