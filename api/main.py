@@ -8,7 +8,6 @@ from schemas import EmpresaRequest, CredencialesUpdate
 from passlib.context import CryptContext
 from client.fetch_products import fetch_products
 from pinecone_module.pinecone_manager import insert_product
-from fastapi import Path
 import traceback
 
 app = FastAPI()
@@ -57,7 +56,7 @@ def registrar_empresa(empresa: EmpresaRequest, db: Session = Depends(get_db)):
         correo=empresa.correo,
         tipo_productos=empresa.tipo_productos,
         password_hash=password_hash,
-        estado_pago="aprobado"  # Simulación de pago exitoso
+        estado_pago="aprobado"
     )
 
     db.add(nueva_empresa)
@@ -87,11 +86,10 @@ def login_empresa(correo: str, password: str, db: Session = Depends(get_db)):
         "tipo_productos": empresa.tipo_productos
     }
 
-# 🔄 Sincronización de productos
+# 🔄 Sincronizar productos por empresa
 @app.post("/sync-empresa-productos")
 def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
 
@@ -110,31 +108,30 @@ def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
         "total": len(productos)
     }
 
-# 🔐 Actualizar credenciales API Keys y endpoint
-@app.put("/empresa/{empresa_id}/credenciales")
-def actualizar_credenciales(
-    empresa_id: int = Path(..., description="ID de la empresa"),
-    credenciales: CredencialesUpdate = Depends(),
+# 🔐 Actualizar credenciales API Keys y endpoint (vía body)
+@app.put("/empresas/{empresa_id}/configuracion")
+def actualizar_configuracion_tecnica(
+    empresa_id: int,
+    config: CredencialesUpdate,
     db: Session = Depends(get_db)
 ):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
 
-    empresa.api_key_openai = credenciales.api_key_openai
-    empresa.api_key_pinecone = credenciales.api_key_pinecone
-    empresa.endpoint_productos = credenciales.endpoint_productos
+    empresa.api_key_openai = config.api_key_openai
+    empresa.api_key_pinecone = config.api_key_pinecone
+    empresa.endpoint_productos = config.endpoint_productos
 
     db.commit()
     db.refresh(empresa)
 
     return {
-        "message": "✅ Credenciales actualizadas correctamente",
+        "message": "✅ Configuración técnica actualizada correctamente",
         "empresa_id": empresa.id
     }
 
-# 📋 Obtener lista de empresas registradas
+# 📋 Obtener detalle de una empresa
 @app.get("/empresas/{empresa_id}")
 def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
@@ -151,32 +148,6 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
         "api_key_pinecone": empresa.api_key_pinecone,
         "endpoint_productos": empresa.endpoint_productos,
         "fecha_registro": empresa.fecha_registro
-    }
-
-
-@app.put("/empresas/{empresa_id}/configuracion")
-def actualizar_configuracion_tecnica(
-    empresa_id: int = Path(..., description="ID de la empresa"),
-    api_key_openai: str = "",
-    api_key_pinecone: str = "",
-    endpoint_productos: str = "",
-    db: Session = Depends(get_db)
-):
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
-    if not empresa:
-        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
-
-    empresa.api_key_openai = api_key_openai
-    empresa.api_key_pinecone = api_key_pinecone
-    empresa.endpoint_productos = endpoint_productos
-
-    db.commit()
-    db.refresh(empresa)
-
-    return {
-        "message": "✅ Configuración técnica actualizada correctamente",
-        "empresa_id": empresa.id
     }
 
 # 📋 Obtener listado de empresas registradas
