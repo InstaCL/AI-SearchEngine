@@ -6,7 +6,6 @@ const EmpresaDashboard = () => {
   const [empresaId, setEmpresaId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Simulamos que el cliente ha iniciado sesión y su ID está almacenado en localStorage
   useEffect(() => {
     const storedId = localStorage.getItem("empresa_id");
     if (storedId) {
@@ -67,7 +66,7 @@ const EmpresaDashboard = () => {
           <h2 className="text-lg font-semibold mb-2">💡 Código de Integración para tu Ecommerce</h2>
           <p className="text-sm mb-2 text-gray-600">Este script te permite incrustar el chatbot en tu sitio web:</p>
           <pre className="bg-gray-100 text-sm p-3 rounded border overflow-x-auto">
-            {`<script>
+{`<script>
   window.empresa_id = "${empresa.id}";
   (function () {
     const s = document.createElement("script");
