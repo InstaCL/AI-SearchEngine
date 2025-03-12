@@ -1,5 +1,8 @@
+# schemas.py
+
 from pydantic import BaseModel
 
+# 📦 Esquema para el registro de empresa
 class EmpresaRequest(BaseModel):
     nombre_empresa: str
     rut: str
@@ -7,6 +10,7 @@ class EmpresaRequest(BaseModel):
     tipo_productos: str
     password: str
 
+# 🔐 Esquema para actualizar credenciales técnicas (API Keys y endpoint)
 class CredencialesUpdate(BaseModel):
     api_key_openai: str
     api_key_pinecone: str
