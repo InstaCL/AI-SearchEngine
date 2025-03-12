@@ -6,9 +6,9 @@ from config.settings import PINECONE_API_KEY, PINECONE_INDEX, OPENAI_API_KEY
 # Configurar OpenAI
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-# Conectar a Pinecone con la nueva API
+# Conectar a Pinecone
 pinecone_client = pinecone.Pinecone(api_key=PINECONE_API_KEY)
-index = pinecone_client.Index(PINECONE_INDEX)  # Corrección: Se usa el cliente para obtener el índice
+index = pinecone_client.Index(PINECONE_INDEX)  # Usar índice configurado
 
 def generate_embedding(text):
     """
@@ -16,7 +16,7 @@ def generate_embedding(text):
     """
     response = openai_client.embeddings.create(
         input=text,
-        model="text-embedding-ada-002"
+        model="text-embedding-3-large"
     )
     return response.data[0].embedding
 
@@ -26,13 +26,17 @@ def insert_product(product_id, product_name, description, empresa_id=None):
     """
     embedding = generate_embedding(product_name + " " + description)
 
+    # Validación opcional para asegurar que los embeddings tienen 3072 dimensiones
+    from config.settings import PINECONE_DIMENSIONS
+    assert len(embedding) == PINECONE_DIMENSIONS, "⚠️ Dimensiones del embedding incorrectas"
+
     metadata = {
         "title": product_name,
         "description": description
     }
 
     if empresa_id:
-        metadata["empresa_id"] = str(empresa_id)  # se guarda como string
+        metadata["empresa_id"] = str(empresa_id)
 
     index.upsert(vectors=[{
         "id": str(product_id),
@@ -67,4 +71,24 @@ def search_similar_products(query, top_k=5, empresa_id=None):
 
     return filtered_products
 
-    
+def delete_products_by_empresa(empresa_id):
+    """
+    Elimina todos los productos en Pinecone relacionados a una empresa específica.
+    """
+    # Usamos un vector dummy para hacer un query masivo con filtro
+    results = index.query(
+        vector=[0.0] * 1536,  # vector dummy
+        top_k=10000,
+        include_metadata=True,
+        filter={"empresa_id": {"$eq": str(empresa_id)}}
+    )
+
+    vector_ids = [match["id"] for match in results["matches"]]
+
+    if vector_ids:
+        index.delete(ids=vector_ids)
+        print(f"🗑️ Eliminados {len(vector_ids)} vectores para empresa_id {empresa_id}")
+    else:
+        print(f"⚠️ No se encontraron productos para eliminar en empresa_id {empresa_id}")
+
+    return len(vector_ids)

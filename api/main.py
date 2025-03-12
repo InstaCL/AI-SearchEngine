@@ -8,6 +8,7 @@ from schemas import EmpresaRequest, CredencialesUpdate
 from passlib.context import CryptContext
 from client.fetch_products import fetch_products
 from pinecone_module.pinecone_manager import insert_product
+from pinecone_module.pinecone_manager import delete_products_by_empresa
 import traceback
 
 app = FastAPI()
@@ -155,3 +156,14 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
 def obtener_empresas(db: Session = Depends(get_db)):
     empresas = db.query(Empresa).all()
     return empresas
+
+@app.delete("/empresa/{empresa_id}/eliminar-productos")
+def eliminar_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+
+    total_eliminados = delete_products_by_empresa(empresa_id)
+    return {
+        "message": f"✅ Se eliminaron {total_eliminados} productos de Pinecone para la empresa {empresa.nombre_empresa}"
+    }

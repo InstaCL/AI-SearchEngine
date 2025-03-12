@@ -14,6 +14,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENV = os.getenv("PINECONE_ENV")
 PINECONE_INDEX = os.getenv("PINECONE_INDEX")
+PINECONE_DIMENSIONS = int(os.getenv("PINECONE_DIMENSIONS", 3072))
 
 # Configuración de la API de productos
 PRODUCTS_API_URL = os.getenv("PRODUCTS_API_URL")
