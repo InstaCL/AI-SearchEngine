@@ -1,14 +1,15 @@
+# pinecone_module/pinecone_manager.py
+
 import pinecone
 import openai
-import os
-from config.settings import PINECONE_API_KEY, PINECONE_INDEX, OPENAI_API_KEY
+from config.settings import PINECONE_API_KEY, PINECONE_INDEX, PINECONE_DIMENSIONS, OPENAI_API_KEY
 
 # Configurar OpenAI
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Conectar a Pinecone
 pinecone_client = pinecone.Pinecone(api_key=PINECONE_API_KEY)
-index = pinecone_client.Index(PINECONE_INDEX)  # Usar índice configurado
+index = pinecone_client.Index(PINECONE_INDEX)
 
 def generate_embedding(text):
     """
@@ -20,41 +21,41 @@ def generate_embedding(text):
     )
     return response.data[0].embedding
 
-def insert_product(product_id, product_name, description, empresa_id=None):
+def insert_or_update_product(product_id, product_name, description, slug="", price=0, category_name="", category_slug="", image="", empresa_id=None):
     """
-    Inserta un producto en Pinecone, incluyendo el empresa_id en los metadatos.
+    Inserta o actualiza un producto enriquecido en Pinecone con metadatos completos.
     """
-    embedding = generate_embedding(product_name + " " + description)
+    embedding = generate_embedding(f"{product_name} {description} {category_name} {slug}")
 
-    # Validación opcional para asegurar que los embeddings tienen 3072 dimensiones
-    from config.settings import PINECONE_DIMENSIONS
-    assert len(embedding) == PINECONE_DIMENSIONS, "⚠️ Dimensiones del embedding incorrectas"
+    assert len(embedding) == PINECONE_DIMENSIONS, "⚠️ Dimensiones incorrectas para Pinecone"
 
     metadata = {
         "title": product_name,
-        "description": description
+        "description": description,
+        "slug": slug,
+        "price": price,
+        "category_name": category_name,
+        "category_slug": category_slug,
+        "image": image
     }
 
     if empresa_id:
         metadata["empresa_id"] = str(empresa_id)
 
+    vector_id = f"{empresa_id}_{product_id}"  # clave única por empresa + producto
+
     index.upsert(vectors=[{
-        "id": str(product_id),
+        "id": vector_id,
         "values": embedding,
         "metadata": metadata
     }])
 
-    print(f"✅ Producto insertado en Pinecone: {product_name}")
+    print(f"✅ Producto insertado/actualizado en Pinecone: {product_name} (ID: {vector_id})")
 
 def search_similar_products(query, top_k=5, empresa_id=None):
-    """
-    Realiza una búsqueda en Pinecone y devuelve productos relevantes filtrados por empresa_id.
-    """
     query_embedding = generate_embedding(query)
 
-    filter_query = {}
-    if empresa_id:
-        filter_query = {"empresa_id": {"$eq": str(empresa_id)}}
+    filter_query = {"empresa_id": {"$eq": str(empresa_id)}} if empresa_id else {}
 
     results = index.query(
         vector=query_embedding,
@@ -63,32 +64,25 @@ def search_similar_products(query, top_k=5, empresa_id=None):
         filter=filter_query
     )
 
-    filtered_products = []
-    for match in results.matches:
-        metadata = match.metadata
-        title = metadata.get("title", "Producto sin título")
-        filtered_products.append(title)
+    return [match.metadata for match in results.matches]
 
-    return filtered_products
+def delete_all_products_by_empresa_id(empresa_id: int):
+    filter_query = {"empresa_id": {"$eq": str(empresa_id)}}
 
-def delete_products_by_empresa(empresa_id):
-    """
-    Elimina todos los productos en Pinecone relacionados a una empresa específica.
-    """
-    # Usamos un vector dummy para hacer un query masivo con filtro
-    results = index.query(
-        vector=[0.0] * 1536,  # vector dummy
+    result = index.query(
+        vector=[0.0] * PINECONE_DIMENSIONS,
         top_k=10000,
-        include_metadata=True,
-        filter={"empresa_id": {"$eq": str(empresa_id)}}
+        include_values=False,
+        include_metadata=False,
+        filter=filter_query
     )
 
-    vector_ids = [match["id"] for match in results["matches"]]
+    vector_ids = [match.id for match in result.matches]
 
-    if vector_ids:
-        index.delete(ids=vector_ids)
-        print(f"🗑️ Eliminados {len(vector_ids)} vectores para empresa_id {empresa_id}")
-    else:
-        print(f"⚠️ No se encontraron productos para eliminar en empresa_id {empresa_id}")
+    if not vector_ids:
+        print(f"⚠️ No se encontraron productos para empresa_id={empresa_id}")
+        return {"message": "No se encontraron productos para eliminar", "total": 0}
 
-    return len(vector_ids)
+    index.delete(ids=vector_ids)
+    print(f"🗑️ Eliminados {len(vector_ids)} productos del índice Pinecone para empresa_id={empresa_id}")
+    return {"message": "✅ Productos eliminados correctamente", "total": len(vector_ids)}
