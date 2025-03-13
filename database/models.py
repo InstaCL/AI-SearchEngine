@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -13,8 +13,10 @@ class Empresa(Base):
     correo = Column(String, unique=True, nullable=False)
     tipo_productos = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
-    estado_pago = Column(String, default="pendiente")  # por defecto pendiente, se actualizará a "aprobado" luego del pago
-    api_key_openai = Column(String, nullable=True)
-    api_key_pinecone = Column(String, nullable=True)
-    endpoint_productos = Column(String, nullable=True)
+    estado_pago = Column(String, default="pendiente")
+    api_productos_estado = Column(String, default="pendiente")  # nuevo campo
+    endpoint_productos = Column(Text, nullable=True)
+    api_key_openai = Column(Text, nullable=True)
+    api_key_pinecone = Column(Text, nullable=True)
+    atributos_sincronizacion = Column(Text, nullable=True)  # se guardará JSON serializado
     fecha_registro = Column(DateTime, default=datetime.utcnow)
