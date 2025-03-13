@@ -1,22 +1,21 @@
+# api/main.py
+
 from fastapi import FastAPI, Depends, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from agent.chat_interface import interact_with_agent
 from database.database import get_db
-from database.models import Empresa, Base
+from database.models import Empresa
 from schemas import EmpresaRequest, CredencialesUpdate
 from passlib.context import CryptContext
 from client.fetch_products import fetch_products
-from pinecone_module.pinecone_manager import insert_product
-from pinecone_module.pinecone_manager import delete_products_by_empresa
+from pinecone_module.pinecone_manager import insert_or_update_product, delete_all_products_by_empresa_id
 import traceback
 
 app = FastAPI()
 
-# 🔐 Contexto para hasheo de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# 🔥 CORS para conexión con React
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -25,12 +24,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🏠 Endpoint raíz
 @app.get("/")
 def home():
     return {"message": "Bienvenido a AI-SearchEngine API 🚀"}
 
-# 🔍 Búsqueda de productos
 @app.get("/search")
 def search(query: str, empresa_id: int, db: Session = Depends(get_db)):
     try:
@@ -41,7 +38,6 @@ def search(query: str, empresa_id: int, db: Session = Depends(get_db)):
         traceback.print_exc()
         return {"error": "Ocurrió un error en el servidor", "details": str(e)}
 
-# 🏢 Registro de Empresa
 @app.post("/registro")
 def registrar_empresa(empresa: EmpresaRequest, db: Session = Depends(get_db)):
     if db.query(Empresa).filter(Empresa.correo == empresa.correo).first():
@@ -64,16 +60,11 @@ def registrar_empresa(empresa: EmpresaRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(nueva_empresa)
 
-    return {
-        "message": "✅ Registro exitoso. Acceso habilitado.",
-        "empresa_id": nueva_empresa.id
-    }
+    return {"message": "✅ Registro exitoso", "empresa_id": nueva_empresa.id}
 
-# 🔐 Login de Empresa
 @app.post("/login")
 def login_empresa(correo: str, password: str, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.correo == correo).first()
-
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no registrada.")
     if not pwd_context.verify(password, empresa.password_hash):
@@ -87,7 +78,6 @@ def login_empresa(correo: str, password: str, db: Session = Depends(get_db)):
         "tipo_productos": empresa.tipo_productos
     }
 
-# 🔄 Sincronizar productos por empresa
 @app.post("/sync-empresa-productos")
 def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
@@ -95,27 +85,26 @@ def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
 
     productos = fetch_products()
+    if not productos:
+        return {"message": "⚠️ No se encontraron productos para sincronizar"}
 
     for producto in productos:
-        insert_product(
+        insert_or_update_product(
             product_id=producto["id"],
             product_name=producto["title"],
             description=producto["description"],
+            slug=producto["slug"],
+            price=producto["price"],
+            category_name=producto["category"]["name"],
+            category_slug=producto["category"]["slug"],
+            image=producto["images"][0] if producto["images"] else "",
             empresa_id=empresa_id
         )
 
-    return {
-        "message": f"✅ Productos sincronizados correctamente para {empresa.nombre_empresa}",
-        "total": len(productos)
-    }
+    return {"message": "✅ Productos sincronizados correctamente", "total": len(productos)}
 
-# 🔐 Actualizar credenciales API Keys y endpoint (vía body)
 @app.put("/empresas/{empresa_id}/configuracion")
-def actualizar_configuracion_tecnica(
-    empresa_id: int,
-    config: CredencialesUpdate,
-    db: Session = Depends(get_db)
-):
+def actualizar_configuracion_tecnica(empresa_id: int, config: CredencialesUpdate, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
@@ -127,12 +116,8 @@ def actualizar_configuracion_tecnica(
     db.commit()
     db.refresh(empresa)
 
-    return {
-        "message": "✅ Configuración técnica actualizada correctamente",
-        "empresa_id": empresa.id
-    }
+    return {"message": "✅ Configuración técnica actualizada", "empresa_id": empresa.id}
 
-# 📋 Obtener detalle de una empresa
 @app.get("/empresas/{empresa_id}")
 def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
@@ -151,19 +136,10 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
         "fecha_registro": empresa.fecha_registro
     }
 
-# 📋 Obtener listado de empresas registradas
 @app.get("/empresas")
 def obtener_empresas(db: Session = Depends(get_db)):
-    empresas = db.query(Empresa).all()
-    return empresas
+    return db.query(Empresa).all()
 
-@app.delete("/empresa/{empresa_id}/eliminar-productos")
-def eliminar_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-    if not empresa:
-        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
-
-    total_eliminados = delete_products_by_empresa(empresa_id)
-    return {
-        "message": f"✅ Se eliminaron {total_eliminados} productos de Pinecone para la empresa {empresa.nombre_empresa}"
-    }
+@app.delete("/empresas/{empresa_id}/eliminar-productos")
+def eliminar_productos_empresa(empresa_id: int):
+    return delete_all_products_by_empresa_id(empresa_id)
