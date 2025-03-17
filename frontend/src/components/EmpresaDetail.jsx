@@ -14,7 +14,8 @@ const EmpresaDetail = () => {
 
   const fetchEmpresa = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/empresas/${id}`);
+      //const res = await fetch(`http://localhost:8000/empresas/${id}`);
+      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresas/${id}`);
       const data = await res.json();
       setEmpresa(data);
       setConfigForm({
@@ -38,7 +39,8 @@ const EmpresaDetail = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:8000/empresas/${id}/configuracion`, {
+      //const res = await fetch(`http://localhost:8000/empresas/${id}/configuracion`, {
+      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresas/${id}/configuracion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(configForm)

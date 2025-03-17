@@ -10,7 +10,8 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:8000/login?correo=${correo}&password=${password}`, {
+      //const res = await fetch(`http://localhost:8000/login?correo=${correo}&password=${password}`, {
+      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/login?correo=${correo}&password=${password}`, {
         method: "POST"
       });
       const data = await res.json();
