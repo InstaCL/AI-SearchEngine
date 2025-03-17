@@ -15,3 +15,7 @@ class CredencialesUpdate(BaseModel):
     api_key_openai: str
     api_key_pinecone: str
     endpoint_productos: str
+
+# Nuevo esquema EndpointProductosUpdate
+class EndpointProductosUpdate(BaseModel):
+    endpoint_productos: str
