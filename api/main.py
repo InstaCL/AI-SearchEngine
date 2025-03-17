@@ -2,14 +2,16 @@
 
 from fastapi import FastAPI, Depends, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Body
 from sqlalchemy.orm import Session
 from agent.chat_interface import interact_with_agent
 from database.database import get_db
 from database.models import Empresa
-from schemas import EmpresaRequest, CredencialesUpdate
+from schemas import EmpresaRequest, CredencialesUpdate, EndpointProductosUpdate
 from passlib.context import CryptContext
 from client.fetch_products import fetch_products
 from pinecone_module.pinecone_manager import insert_or_update_product, delete_all_products_by_empresa_id
+from typing import List
 import traceback
 
 app = FastAPI()
@@ -143,3 +145,72 @@ def obtener_empresas(db: Session = Depends(get_db)):
 @app.delete("/empresas/{empresa_id}/eliminar-productos")
 def eliminar_productos_empresa(empresa_id: int):
     return delete_all_products_by_empresa_id(empresa_id)
+
+@app.put("/empresa/{empresa_id}/endpoint-productos")
+def registrar_endpoint_productos(
+    empresa_id: int,
+    data: EndpointProductosUpdate,
+    db: Session = Depends(get_db)
+):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+
+    empresa.endpoint_productos = data.endpoint_productos
+    empresa.api_productos_estado = "pendiente"
+
+    db.commit()
+    db.refresh(empresa)
+
+    return {"message": "✅ Endpoint registrado correctamente", "empresa_id": empresa.id}
+
+@app.get("/empresa/{empresa_id}/atributos-api")
+def obtener_atributos_api(empresa_id: int, db: Session = Depends(get_db)):
+    """
+    Detecta y retorna dinámicamente los nombres de atributos disponibles en la API del cliente.
+    """
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+    
+    if not empresa.endpoint_productos:
+        raise HTTPException(status_code=400, detail="⚠️ La empresa aún no ha registrado su API de productos")
+
+    try:
+        import requests
+        response = requests.get(empresa.endpoint_productos)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="⚠️ No se pudo acceder al endpoint de productos")
+
+        productos = response.json()
+        if not productos or not isinstance(productos, list):
+            raise HTTPException(status_code=400, detail="⚠️ Formato inválido de productos")
+
+        atributos = list(productos[0].keys())
+        return {"atributos_disponibles": atributos}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"❌ Error al obtener atributos: {str(e)}")
+
+@app.put("/empresas/{empresa_id}/atributos-sincronizacion")
+def guardar_atributos_sincronizacion(
+    empresa_id: int,
+    atributos: List[str] = Body(..., embed=True),
+    db: Session = Depends(get_db)
+):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+
+    # Convertimos la lista a string JSON para guardarlo como texto en la BD
+    import json
+    empresa.atributos_sincronizacion = json.dumps(atributos)
+
+    db.commit()
+    db.refresh(empresa)
+
+    return {
+        "message": "✅ Atributos guardados correctamente",
+        "empresa_id": empresa.id,
+        "atributos_sincronizados": atributos
+    }
