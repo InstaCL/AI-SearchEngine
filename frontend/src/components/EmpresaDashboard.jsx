@@ -19,7 +19,7 @@ const EmpresaDashboard = () => {
 
       try {
         //const res = await fetch(`http://localhost:8000/empresas/${empresaId}`);
-        const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresas/${empresaId}`);
+        const res = await fetch(`https://ai-searchengine-1b3g.onrender.com/empresas/${empresaId}`);
         const data = await res.json();
         setEmpresa(data);
         setLoading(false);

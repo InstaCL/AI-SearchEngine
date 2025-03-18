@@ -22,7 +22,7 @@ const RegisterEmpresa = () => {
 
     try {
       //const res = await fetch("http://localhost:8000/registro", {
-      const res = await fetch("http://ai-searchengine-1b3g.onrender.com/registro", {
+      const res = await fetch("https://ai-searchengine-1b3g.onrender.com/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)

@@ -24,7 +24,7 @@ const AdminPanel = () => {
   const fetchEmpresas = async () => {
     try {
       //const res = await fetch("http://localhost:8000/empresas");
-      const res = await fetch("http://ai-searchengine-1b3g.onrender.com/empresas");
+      const res = await fetch("https://ai-searchengine-1b3g.onrender.com/empresas");
       const data = await res.json();
       setEmpresas(data);
     } catch (error) {
@@ -44,7 +44,7 @@ const AdminPanel = () => {
     e.preventDefault();
     try {
       //const res = await fetch("http://localhost:8000/registro", {
-      const res = await fetch("http://ai-searchengine-1b3g.onrender.com/registro", {
+      const res = await fetch("https://ai-searchengine-1b3g.onrender.com/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empresaForm)
@@ -74,7 +74,7 @@ const AdminPanel = () => {
     }
     try {
       //const res = await fetch(`http://localhost:8000/empresas/${configForm.empresa_id}/configuracion`, {
-      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresas/${configForm.empresa_id}/configuracion`, {
+      const res = await fetch(`https://ai-searchengine-1b3g.onrender.com/empresas/${configForm.empresa_id}/configuracion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,7 +108,7 @@ const AdminPanel = () => {
   const fetchAtributos = async () => {
     try {
       //const res = await fetch(`http://localhost:8000/empresa/${empresaIdAtributos}/atributos-api`);
-      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresa/${empresaIdAtributos}/atributos-api`);
+      const res = await fetch(`https://ai-searchengine-1b3g.onrender.com/empresa/${empresaIdAtributos}/atributos-api`);
       const data = await res.json();
       setAtributosDisponibles(data.atributos_disponibles);
     } catch (error) {
@@ -120,7 +120,7 @@ const AdminPanel = () => {
     e.preventDefault();
     try {
       //const res = await fetch(`http://localhost:8000/empresas/${empresaIdAtributos}/atributos-sincronizacion`, {
-      const res = await fetch(`http://ai-searchengine-1b3g.onrender.com/empresas/${empresaIdAtributos}/atributos-sincronizacion`, {
+      const res = await fetch(`https://ai-searchengine-1b3g.onrender.com/empresas/${empresaIdAtributos}/atributos-sincronizacion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ atributos: atributosSeleccionados })
