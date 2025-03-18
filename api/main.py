@@ -1,8 +1,7 @@
 # api/main.py
 
-from fastapi import FastAPI, Depends, HTTPException, Path
+from fastapi import FastAPI, Depends, HTTPException, Path, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Body
 from sqlalchemy.orm import Session
 from agent.chat_interface import interact_with_agent
 from database.database import get_db
@@ -13,18 +12,30 @@ from client.fetch_products import fetch_products
 from pinecone_module.pinecone_manager import insert_or_update_product, delete_all_products_by_empresa_id
 from typing import List
 import traceback
+import json
+import requests
 
 app = FastAPI()
 
+# 🔐 Contexto de hash de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ✅ CORS Middleware actualizado para permitir solicitudes desde tu frontend en Vercel
+origins = [
+    "http://localhost:3000",
+    "https://ai-search-engine-render.vercel.app",
+    "https://ai-searchengine-1b3g.onrender.com"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------- ENDPOINTS ----------------------
 
 @app.get("/")
 def home():
@@ -36,7 +47,6 @@ def search(query: str, empresa_id: int, db: Session = Depends(get_db)):
         response = interact_with_agent(query, empresa_id=empresa_id)
         return {"query": query, "response": response}
     except Exception as e:
-        print("❌ ERROR EN LA API:")
         traceback.print_exc()
         return {"error": "Ocurrió un error en el servidor", "details": str(e)}
 
@@ -135,6 +145,7 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
         "api_key_openai": empresa.api_key_openai,
         "api_key_pinecone": empresa.api_key_pinecone,
         "endpoint_productos": empresa.endpoint_productos,
+        "atributos_sincronizacion": empresa.atributos_sincronizacion,
         "fecha_registro": empresa.fecha_registro
     }
 
@@ -166,18 +177,13 @@ def registrar_endpoint_productos(
 
 @app.get("/empresa/{empresa_id}/atributos-api")
 def obtener_atributos_api(empresa_id: int, db: Session = Depends(get_db)):
-    """
-    Detecta y retorna dinámicamente los nombres de atributos disponibles en la API del cliente.
-    """
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
-    
     if not empresa.endpoint_productos:
         raise HTTPException(status_code=400, detail="⚠️ La empresa aún no ha registrado su API de productos")
 
     try:
-        import requests
         response = requests.get(empresa.endpoint_productos)
         if response.status_code != 200:
             raise HTTPException(status_code=400, detail="⚠️ No se pudo acceder al endpoint de productos")
@@ -202,10 +208,7 @@ def guardar_atributos_sincronizacion(
     if not empresa:
         raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
 
-    # Convertimos la lista a string JSON para guardarlo como texto en la BD
-    import json
     empresa.atributos_sincronizacion = json.dumps(atributos)
-
     db.commit()
     db.refresh(empresa)
 
