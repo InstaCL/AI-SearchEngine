@@ -1,33 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Inicialización de la aplicación FastAPI
-app = FastAPI(title="AI-SearchEngine Backend", version="1.0.0")
+# Importaciones de routers
+from routers import all_routers
+from routers.empresa_register import router as empresa_register
+from routers.chat_router import router as chat_router
 
-# Middleware CORS para permitir conexión con frontend (React en Vercel u otras URLs permitidas)
+# Inicializar la app FastAPI
+app = FastAPI(title="Instacommerce AI - Backend")
+
+# Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringirlo después a dominios específicos
+    allow_origins=["http://localhost:3000", "https://tudominio.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Ruta raíz de prueba
+# Incluir dinámicamente los routers con prefijos
+for prefix, router, tag in all_routers:
+    app.include_router(router, prefix=f"/{prefix}", tags=[tag])
+
+# Routers sin prefijo
+app.include_router(empresa_register, tags=["Registro de Empresa"])
+app.include_router(chat_router, tags=["IA - Chat"])
+
+# Ruta raíz
 @app.get("/")
-def root():
-    return {"message": "🚀 Bienvenido a la API de AI-SearchEngine - Instacommerce AI"}
-
-# Importación de routers (modularización profesional)
-# from routers.empresas import router as empresas_router
-# from routers.configuracion import router as configuracion_router
-# from routers.sync import router as sync_router
-# from routers.agentes import router as agentes_router
-
-# Registro de routers (descomentar cuando estén disponibles)
-# app.include_router(empresas_router, prefix="/empresas", tags=["Empresas"])
-# app.include_router(configuracion_router, prefix="/configuracion", tags=["Configuración Técnica"])
-# app.include_router(sync_router, prefix="/sync", tags=["Sincronización"])
-# app.include_router(agentes_router, prefix="/agentes", tags=["Agentes IA"])
-
-# Nota: Las rutas modulares estarán disponibles luego de crear sus respectivos archivos en /routers/
+def home():
+    return {"message": "🚀 Bienvenido a Instacommerce AI Backend"}
