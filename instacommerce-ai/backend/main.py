@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import all_routers
 from routers.empresa_register import router as empresa_register
 from routers.chat_router import router as chat_router
+from routers.config_router import router as config_router  # 🚀 Agregado
 
 # Inicializar la app FastAPI
 app = FastAPI(title="Instacommerce AI - Backend")
@@ -25,6 +26,7 @@ for prefix, router, tag in all_routers:
 # Routers sin prefijo
 app.include_router(empresa_register, tags=["Registro de Empresa"])
 app.include_router(chat_router, tags=["IA - Chat"])
+app.include_router(config_router, tags=["Configuración"])  # ✅ Nuevo router
 
 # Ruta raíz
 @app.get("/")
