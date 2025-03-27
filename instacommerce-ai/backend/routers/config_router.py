@@ -2,19 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.models import Empresa
-from schemas import CredencialesUpdate
+from pydantic import BaseModel
 
-router = APIRouter(prefix="/config", tags=["Configuración Técnica"])
+router = APIRouter()
 
-@router.put("/{empresa_id}")
-def actualizar_configuracion_tecnica(empresa_id: int, config: CredencialesUpdate, db: Session = Depends(get_db)):
+class CredencialesUpdate(BaseModel):
+    api_key_openai: str
+    api_key_pinecone: str
+    endpoint_productos: str
+
+@router.put("/configuracion/credenciales/{empresa_id}")
+def actualizar_credenciales(empresa_id: int, credenciales: CredencialesUpdate, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
-        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    empresa.api_key_openai = config.api_key_openai
-    empresa.api_key_pinecone = config.api_key_pinecone
-    empresa.endpoint_productos = config.endpoint_productos
-
+    empresa.api_key_openai = credenciales.api_key_openai
+    empresa.api_key_pinecone = credenciales.api_key_pinecone
+    empresa.endpoint_productos = credenciales.endpoint_productos
     db.commit()
-    return {"message": "✅ Configuración actualizada", "empresa_id": empresa.id}
+
+    return {"message": "🔐 Credenciales actualizadas correctamente"}
+
