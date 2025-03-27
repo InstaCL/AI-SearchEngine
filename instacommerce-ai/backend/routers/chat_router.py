@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from typing import Optional, List
 from pydantic import BaseModel
 from database.database import get_db
-from sqlalchemy.orm import Session
 from database.models import Chat, ChatMensaje
 from agent.subordinate_agent import construir_respuesta_usuario
+from agent.leader_agent import validar_respuesta_subordinado
 
 router = APIRouter()
 
@@ -26,11 +26,17 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
         db.add(chat)
         db.commit()
 
-    # Respuestas simuladas
-    respuesta_sub = f"(Subordinado): Encontré un producto basado en lo que dijiste: '{datos.mensaje}'"
-    respuesta_lider = "(Líder): Revisé la info del subordinado y me parece adecuada."
+    # Obtener contexto del chat (mensajes anteriores)
+    mensajes_previos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id).all()
+    contexto = [m.contenido for m in mensajes_previos]
 
-    # Guardar mensajes en la base de datos
+    # Agente subordinado genera respuesta basada en productos reales
+    respuesta_sub = construir_respuesta_usuario(datos.mensaje, contexto, datos.empresa_id)
+
+    # Agente líder valida la respuesta del subordinado
+    respuesta_lider = validar_respuesta_subordinado(respuesta_sub, contexto, datos.mensaje)
+
+    # Guardar nuevo turno de conversación
     mensajes = [
         ChatMensaje(chat_id=chat_id, contenido=f"Usuario: {datos.mensaje}"),
         ChatMensaje(chat_id=chat_id, contenido=respuesta_sub),
@@ -39,8 +45,9 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
     db.add_all(mensajes)
     db.commit()
 
-    # Recuperar últimos 3 mensajes
+    # Obtener últimos 3 mensajes de este turno
     ultimos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id.desc()).limit(3).all()
+
     return {
         "chat_id": chat_id,
         "conversacion": [m.contenido for m in reversed(ultimos)]
