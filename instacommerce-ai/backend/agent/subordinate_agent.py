@@ -2,20 +2,21 @@
 
 from database.database import get_db
 from database.models import ChatMensaje
-from uuid import uuid4
-from fastapi import Depends
-from sqlalchemy.orm import Session
+from typing import List, Tuple
 from agent.leader_agent import validar_respuesta_subordinado
 from pinecone_module.pinecone_manager import buscar_productos_relacionados
 
-def construir_respuesta_usuario(mensaje_usuario: str, contexto: list, empresa_id: int) -> str:
+def construir_respuesta_usuario(mensaje_usuario: str, contexto: List[str], empresa_id: int) -> Tuple[str, List[dict]]:
     productos = buscar_productos_relacionados(mensaje_usuario, empresa_id)
-    
+
     if not productos:
-        return "(Subordinado): No encontré productos relacionados en este momento."
-    
+        return "(Subordinado): No encontré productos relacionados en este momento.", []
+
     productos_texto = "\n".join(
-        f"- {producto['title']} (${producto['price']})" for producto in productos
+        f"🔹 Producto {i+1}:\n📌 *{producto['title']}*\n💲 Precio: ${producto['price']}\n📝 {producto.get('description', '')}"
+        for i, producto in enumerate(productos)
     )
 
-    return f"(Subordinado): Basado en tu mensaje, aquí hay algunas opciones:\n{productos_texto}"
+    respuesta = f"(Subordinado): Aquí tienes algunos productos recomendados:\n\n{productos_texto}"
+    return respuesta, productos
+

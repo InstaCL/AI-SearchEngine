@@ -19,14 +19,6 @@ class ChatInput(BaseModel):
 def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
     chat_id = datos.chat_id or str(uuid4())
 
-    # Validar que la empresa tenga credenciales técnicas completas
-    empresa = db.query(Empresa).filter(Empresa.id == datos.empresa_id).first()
-    if not empresa or not all([empresa.api_key_openai, empresa.api_key_pinecone, empresa.endpoint_productos]):
-        raise HTTPException(
-            status_code=403,
-            detail="❌ Esta empresa no tiene sus credenciales técnicas configuradas. Contacta al administrador."
-        )
-
     # Crear chat si no existe
     chat = db.query(Chat).filter(Chat.id == chat_id).first()
     if not chat:
@@ -39,23 +31,29 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
     db.add(ChatMensaje(chat_id=chat_id, contenido=mensaje_usuario))
     db.commit()
 
-    # Obtener contexto anterior
+    # Obtener contexto completo
     mensajes_previos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id).all()
     contexto = [m.contenido for m in mensajes_previos]
 
-    # Agente subordinado genera respuesta
-    respuesta_sub = construir_respuesta_usuario(datos.mensaje, contexto, datos.empresa_id)
+    # Agente subordinado construye respuesta y devuelve productos
+    respuesta_sub, productos = construir_respuesta_usuario(datos.mensaje, contexto, datos.empresa_id)
 
-    # Agente líder valida respuesta
-    respuesta_lider = validar_respuesta_subordinado(respuesta_sub, contexto, datos.mensaje)
+    # Agente líder enriquece la respuesta del subordinado
+    respuesta_lider = validar_respuesta_subordinado(
+        respuesta_sub,
+        contexto,
+        datos.mensaje,
+        productos
+    )
 
     # Guardar respuestas
     db.add_all([
         ChatMensaje(chat_id=chat_id, contenido=respuesta_sub),
-        ChatMensaje(chat_id=chat_id, contenido=respuesta_lider),
+        ChatMensaje(chat_id=chat_id, contenido=respuesta_lider)
     ])
     db.commit()
 
+    # Devolver últimos mensajes del turno
     return {
         "chat_id": chat_id,
         "conversacion": [mensaje_usuario, respuesta_sub, respuesta_lider]
