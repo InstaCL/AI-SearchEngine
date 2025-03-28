@@ -4,7 +4,7 @@ from uuid import uuid4
 from typing import Optional, List
 from pydantic import BaseModel
 from database.database import get_db
-from database.models import Chat, ChatMensaje, Empresa
+from database.models import Chat, ChatMensaje
 from agent.subordinate_agent import construir_respuesta_usuario
 from agent.leader_agent import validar_respuesta_subordinado
 
@@ -27,36 +27,45 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
         db.commit()
 
     # Guardar mensaje del usuario
-    mensaje_usuario = f"Usuario: {datos.mensaje}"
-    db.add(ChatMensaje(chat_id=chat_id, contenido=mensaje_usuario))
+    mensaje_usuario = ChatMensaje(chat_id=chat_id, contenido=f"Usuario: {datos.mensaje}")
+    db.add(mensaje_usuario)
     db.commit()
 
-    # Obtener contexto completo
-    mensajes_previos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id).all()
-    contexto = [m.contenido for m in mensajes_previos]
+    # Obtener contexto solo de los mensajes del usuario
+    mensajes_previos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id.asc()).all()
+    contexto = [m.contenido for m in mensajes_previos if m.contenido.startswith("Usuario:")]
 
-    # Agente subordinado construye respuesta y devuelve productos
-    respuesta_sub, productos = construir_respuesta_usuario(datos.mensaje, contexto, datos.empresa_id)
-
-    # Agente líder enriquece la respuesta del subordinado
-    respuesta_lider = validar_respuesta_subordinado(
-        respuesta_sub,
-        contexto,
-        datos.mensaje,
-        productos
+    # Subordinado responde basado en el contexto y la empresa
+    respuesta_sub, productos = construir_respuesta_usuario(
+        mensaje_usuario=datos.mensaje,
+        contexto=contexto,
+        empresa_id=datos.empresa_id
     )
 
-    # Guardar respuestas
+    # Líder analiza la respuesta del subordinado y la mejora
+    respuesta_lider = validar_respuesta_subordinado(
+        respuesta_subordinado=respuesta_sub,
+        contexto=contexto,
+        mensaje_usuario=datos.mensaje,
+        productos=productos  # Este valor lo retorna construir_respuesta_usuario
+    )
+
+    # Guardar ambas respuestas en el chat
     db.add_all([
         ChatMensaje(chat_id=chat_id, contenido=respuesta_sub),
         ChatMensaje(chat_id=chat_id, contenido=respuesta_lider)
     ])
     db.commit()
 
-    # Devolver últimos mensajes del turno
+    # Devolver los últimos 3 mensajes
+    ultimos = db.query(ChatMensaje)\
+        .filter(ChatMensaje.chat_id == chat_id)\
+        .order_by(ChatMensaje.id.desc())\
+        .limit(3).all()
+
     return {
         "chat_id": chat_id,
-        "conversacion": [mensaje_usuario, respuesta_sub, respuesta_lider]
+        "conversacion": [m.contenido for m in reversed(ultimos)]
     }
 
 @router.get("/chat/{chat_id}")
