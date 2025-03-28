@@ -1,5 +1,5 @@
 from typing import List
-import pinecone
+from pinecone import Pinecone
 import os
 from openai import OpenAI
 from database.models import Empresa
@@ -14,26 +14,33 @@ def delete_all_products_by_empresa_id(empresa_id: int):
     return {"message": "✅ Productos eliminados correctamente"}
 
 def buscar_productos_relacionados(mensaje_usuario: str, empresa_id: int) -> List[dict]:
-    # Carga la API key desde la BD
     db = SessionLocal()
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+
     if not empresa or not empresa.api_key_pinecone or not empresa.api_key_openai:
         return []
 
-    # Set API keys
-    pinecone.init(api_key=empresa.api_key_pinecone, environment="gcp-starter")  # Reemplaza si es otro env
+    # 🔐 Inicializar cliente Pinecone
+    pc = Pinecone(api_key=empresa.api_key_pinecone)
+
+    # 🔐 Inicializar cliente OpenAI
     client = OpenAI(api_key=empresa.api_key_openai)
 
-    # Embedding del mensaje
+    # 🧠 Obtener embedding
     response = client.embeddings.create(
         model="text-embedding-3-large",
         input=mensaje_usuario
     )
     embedding_vector = response.data[0].embedding
 
-    # Buscar en el índice
-    index = pinecone.Index("ai-searchengine-productos")
-    resultados = index.query(vector=embedding_vector, top_k=5, namespace=str(empresa_id), include_metadata=True)
+    # 🔍 Buscar en índice
+    index = pc.Index("ai-searchengine-productos")
+    resultados = index.query(
+        vector=embedding_vector,
+        top_k=5,
+        namespace=str(empresa_id),
+        include_metadata=True
+    )
 
     productos = []
     for match in resultados.matches:
