@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON  # <- AQUI EL CAMBIO
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from sqlalchemy.orm import relationship
@@ -36,3 +36,13 @@ class ChatMensaje(Base):
     contenido = Column(String, nullable=False)
     
     chat = relationship("Chat", back_populates="mensajes")
+
+class HistorialConversacion(Base):
+    __tablename__ = "historial_conversaciones"
+
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, nullable=False)
+    chat_id = Column(String, nullable=False)
+    resumen = Column(Text, nullable=False)
+    productos_mencionados = Column(JSON, nullable=True)  # <- CAMBIO AQUÍ
+    timestamp = Column(DateTime, default=datetime.utcnow)
