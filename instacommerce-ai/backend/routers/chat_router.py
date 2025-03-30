@@ -4,7 +4,7 @@ from uuid import uuid4
 from typing import Optional, List
 from pydantic import BaseModel
 from database.database import get_db
-from database.models import Chat, ChatMensaje
+from database.models import Chat, ChatMensaje, HistorialConversacion
 from agent.subordinate_agent import construir_respuesta_usuario
 from agent.leader_agent import validar_respuesta_subordinado
 
@@ -31,7 +31,7 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
     db.add(mensaje_usuario)
     db.commit()
 
-    # Obtener contexto solo de los mensajes del usuario
+    # Obtener contexto (solo mensajes del usuario)
     mensajes_previos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id.asc()).all()
     contexto = [m.contenido for m in mensajes_previos if m.contenido.startswith("Usuario:")]
 
@@ -42,26 +42,38 @@ def conversar_con_agente(datos: ChatInput, db: Session = Depends(get_db)):
         empresa_id=datos.empresa_id
     )
 
-    # Líder analiza la respuesta del subordinado y la mejora
+    # Líder analiza y mejora la respuesta del subordinado
     respuesta_lider = validar_respuesta_subordinado(
         respuesta_subordinado=respuesta_sub,
         contexto=contexto,
         mensaje_usuario=datos.mensaje,
-        productos=productos  # Este valor lo retorna construir_respuesta_usuario
+        productos=productos
     )
 
-    # Guardar ambas respuestas en el chat
+    # Guardar respuestas del agente
     db.add_all([
         ChatMensaje(chat_id=chat_id, contenido=respuesta_sub),
         ChatMensaje(chat_id=chat_id, contenido=respuesta_lider)
     ])
     db.commit()
 
-    # Devolver los últimos 3 mensajes
-    ultimos = db.query(ChatMensaje)\
-        .filter(ChatMensaje.chat_id == chat_id)\
-        .order_by(ChatMensaje.id.desc())\
-        .limit(3).all()
+    # 🧠 Crear resumen y guardar historial
+    resumen_conversacion = f"📝 Resumen: El cliente preguntó: '{datos.mensaje}'. El agente sugirió productos relacionados y ofreció asistencia adicional."
+    productos_mencionados = ", ".join([p["title"] for p in productos]) if productos else "Ninguno"
+    resumen = f"📝 Resumen: El cliente preguntó: '{datos.mensaje}'. El agente sugirió productos relacionados y ofreció asistencia adicional."
+
+
+    historial = HistorialConversacion(
+        empresa_id=datos.empresa_id,
+        chat_id=chat_id,
+        resumen=resumen,
+        productos_mencionados=productos_mencionados
+    )
+    db.add(historial)
+    db.commit()
+
+    # Últimos 3 mensajes
+    ultimos = db.query(ChatMensaje).filter(ChatMensaje.chat_id == chat_id).order_by(ChatMensaje.id.desc()).limit(3).all()
 
     return {
         "chat_id": chat_id,
