@@ -11,13 +11,18 @@ class EmpresaRequest(BaseModel):
 class EmpresaResponse(BaseModel):
     id: int
     nombre_empresa: str
-    rut: str
-    correo: EmailStr
-    tipo_productos: str
-    estado_pago: str
+    correo: str
+    rut: Optional[str] = None
+    tipo_productos: Optional[str] = None
+    estado_pago: Optional[str] = None
+    api_key_openai: Optional[str] = None
+    api_key_pinecone: Optional[str] = None
+    endpoint_productos: Optional[str] = None
+    api_productos_estado: Optional[str] = None
+    atributos_sincronizacion: Optional[str] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 class EmpresaRegisterRequest(BaseModel):
     nombre_empresa: str

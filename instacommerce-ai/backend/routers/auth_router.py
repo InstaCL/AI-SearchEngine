@@ -3,27 +3,26 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from database.database import get_db
 from database.models import Empresa
-from schemas import LoginRequest, LoginResponse
+from schemas.login_empresa import LoginEmpresa
 
 router = APIRouter()
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@router.post("/login", response_model=LoginResponse)
-def login_empresa(credentials: LoginRequest, db: Session = Depends(get_db)):
-    empresa = db.query(Empresa).filter(Empresa.correo == credentials.correo).first()
+@router.post("/login")
+def login_empresa(datos: LoginEmpresa, db: Session = Depends(get_db)):
+    # Buscar empresa por correo o alias
+    empresa = db.query(Empresa).filter(
+        (Empresa.correo == datos.usuario) | (Empresa.nombre_empresa == datos.usuario)
+    ).first()
 
     if not empresa:
-        raise HTTPException(status_code=404, detail="❌ Empresa no registrada.")
+        raise HTTPException(status_code=401, detail="❌ Usuario no encontrado")
 
-    if not pwd_context.verify(credentials.password, empresa.password_hash):
-        raise HTTPException(status_code=401, detail="❌ Contraseña incorrecta.")
+    if not pwd_context.verify(datos.password, empresa.password_hash):
+        raise HTTPException(status_code=401, detail="❌ Contraseña incorrecta")
 
-    if empresa.estado_pago != "aprobado":
-        raise HTTPException(status_code=403, detail="⚠️ Acceso denegado: pago pendiente.")
-
-    return LoginResponse(
-        message=f"✅ Bienvenido {empresa.nombre_empresa}",
-        empresa_id=empresa.id,
-        tipo_productos=empresa.tipo_productos
-    )
+    return {
+        "mensaje": "✅ Login exitoso",
+        "empresa_id": empresa.id,
+        "nombre": empresa.nombre_empresa
+    }

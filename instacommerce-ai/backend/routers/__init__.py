@@ -1,6 +1,6 @@
 # routers/__init__.py
 
-from .empresa_router import router as empresa_router
+from .empresas_router import router as empresas_router
 from .auth_router import router as auth_router
 from .config_router import router as config_router
 from .sync_router import router as sync_router
@@ -11,8 +11,8 @@ from .historial_router import router as historial_router
 # Aquí podrías agregar los próximos routers: subordinado_router, lider_router, etc.
 
 all_routers = [
+    ("empresas", empresas_router, "Empresas"),
     ("auth", auth_router, "Autenticación"),
-    ("empresas", empresa_router, "Empresas"),
     ("configuracion", config_router, "Configuración Técnica"),
     ("sync", sync_router, "Sincronización de Productos"),
     ("chat", chat_router, "IA - Interacción Cliente"),

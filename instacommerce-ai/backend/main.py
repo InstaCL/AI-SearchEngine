@@ -2,10 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Importaciones de routers
-from routers import all_routers
+from routers.empresas_router import router as empresa_router
 from routers.empresa_register import router as empresa_register
 from routers.chat_router import router as chat_router
-from routers.config_router import router as config_router  # 🚀 Agregado
+from routers.config_router import router as config_router
+from routers.prueba_router import router as prueba_router
 
 # Inicializar la app FastAPI
 app = FastAPI(title="Instacommerce AI - Backend")
@@ -19,14 +20,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir dinámicamente los routers con prefijos
-for prefix, router, tag in all_routers:
-    app.include_router(router, prefix=f"/{prefix}", tags=[tag])
-
-# Routers sin prefijo
-app.include_router(empresa_register, tags=["Registro de Empresa"])
-app.include_router(chat_router, tags=["IA - Chat"])
-app.include_router(config_router, tags=["Configuración"])  # ✅ Nuevo router
+# Routers montados con sus propios prefijos definidos en los archivos
+app.include_router(empresa_router)          # Incluye /empresas
+app.include_router(empresa_register)        # Registro de empresa (sin prefijo)
+app.include_router(chat_router)             # Chat IA
+app.include_router(config_router)           # Configuración técnica
+app.include_router(prueba_router, prefix="/prueba", tags=["Prueba Debug"])  # Rutas de debug opcionales
 
 # Ruta raíz
 @app.get("/")

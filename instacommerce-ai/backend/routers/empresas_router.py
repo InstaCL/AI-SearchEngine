@@ -16,6 +16,7 @@ router.include_router(empresa_login.router)
 # Listado de empresas
 @router.get("/", response_model=list[EmpresaResponse])
 def listar_empresas(db: Session = Depends(get_db)):
+    print("📡 Endpoint /empresas/ accedido")
     empresas = db.query(Empresa).all()
     return empresas
 
@@ -26,3 +27,8 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
     return empresa
+
+@router.get("/ping")
+def ping_empresas():
+    print("✅ Router empresas funciona")
+    return {"mensaje": "pong desde empresas"}
