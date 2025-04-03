@@ -21,8 +21,9 @@ class EmpresaResponse(BaseModel):
     api_productos_estado: Optional[str] = None
     atributos_sincronizacion: Optional[str] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    } 
 
 class EmpresaRegisterRequest(BaseModel):
     nombre_empresa: str
