@@ -6,13 +6,90 @@ from database.models import Empresa
 from database.database import SessionLocal
 from config import settings
 
-def insert_or_update_product(**kwargs):
-    print("📥 Producto insertado o actualizado (simulación)")
-    return True
+def insert_or_update_product(
+    index_name: str,
+    product_id: int,
+    product_name: str,
+    description: str,
+    slug: str,
+    price: float,
+    category_name: str,
+    category_slug: str,
+    image: str,
+    empresa_id: int,
+):
+    # Validación de claves
+    if not settings.OPENAI_API_KEY or not settings.PINECONE_API_KEY:
+        print("❌ Faltan claves de API")
+        return False
 
-def delete_all_products_by_empresa_id(empresa_id: int):
-    print(f"🗑️ Productos eliminados para empresa {empresa_id} (simulación)")
-    return {"message": "✅ Productos eliminados correctamente"}
+    # 🧠 Inicializar cliente OpenAI
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    texto_para_embedding = f"{product_name}. {description}. {category_name}"
+
+    try:
+        response = client.embeddings.create(
+            model="text-embedding-3-large",
+            input=texto_para_embedding
+        )
+        embedding_vector = response.data[0].embedding
+    except Exception as e:
+        print("❌ Error generando embedding:", e)
+        return False
+
+    # 📡 Inicializar cliente Pinecone
+    try:
+        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+        index = pc.Index(index_name)
+    except Exception as e:
+        print("❌ Error conectando a Pinecone:", e)
+        return False
+
+    # 🔁 Insertar o actualizar el vector
+    try:
+        index.upsert(
+            vectors=[
+                {
+                    "id": str(product_id),
+                    "values": embedding_vector,
+                    "metadata": {
+                        "title": product_name,
+                        "description": description,
+                        "slug": slug,
+                        "price": price,
+                        "category": category_name,
+                        "category_slug": category_slug,
+                        "image": image,
+                        "empresa_id": empresa_id
+                    }
+                }
+            ],
+            namespace=str(empresa_id)
+        )
+        print(f"✅ Producto {product_id} sincronizado en índice {index_name}")
+        return True
+    except Exception as e:
+        print("❌ Error al insertar en Pinecone:", e)
+        return False
+
+
+def delete_all_products_by_empresa_id(empresa_id: int, index_name: str):
+    db = SessionLocal()
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+
+    if not empresa or not empresa.api_key_pinecone:
+        raise ValueError("❌ Empresa o API Key no válida")
+
+    # Inicializar cliente Pinecone
+    pc = Pinecone(api_key=empresa.api_key_pinecone)
+    index = pc.Index(index_name)
+
+    # Eliminar vectores del namespace correspondiente al ID de empresa
+    index.delete(delete_all=True, namespace=str(empresa_id))
+
+    print(f"🗑️ Todos los vectores eliminados para empresa {empresa_id} del índice '{index_name}'")
+    return {"message": f"✅ Productos eliminados del índice '{index_name}' correctamente"}
+
 
 def buscar_productos_relacionados(mensaje_usuario: str, empresa_id: int) -> List[dict]:
     db = SessionLocal()

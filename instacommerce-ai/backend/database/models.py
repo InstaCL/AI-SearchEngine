@@ -21,6 +21,7 @@ class Empresa(Base):
     api_productos_estado = Column(String(50), default="pendiente")
     atributos_sincronizacion = Column(Text, nullable=True)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
+    indice_pinecone = Column(String, nullable=True)
 
 class Chat(Base):
     __tablename__ = "chats"

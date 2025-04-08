@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.models import Empresa
-from schemas.schemas import EmpresaRequest, EmpresaResponse
+from schemas.schemas import EmpresaRequest, EmpresaResponse, CredencialesUpdate  # ✅ Importación extra
 
 # Importar subrouters
 from routers import empresa_register, empresa_login
@@ -28,6 +28,26 @@ def obtener_empresa(empresa_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
     return empresa
 
+# ✅ Actualización técnica (incluye índice Pinecone)
+@router.put("/{empresa_id}")
+def actualizar_empresa(empresa_id: int, datos: CredencialesUpdate, db: Session = Depends(get_db)):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    if datos.api_key_openai is not None:
+        empresa.api_key_openai = datos.api_key_openai
+    if datos.api_key_pinecone is not None:
+        empresa.api_key_pinecone = datos.api_key_pinecone
+    if datos.endpoint_productos is not None:
+        empresa.endpoint_productos = datos.endpoint_productos
+    if hasattr(datos, "indice_pinecone") and datos.indice_pinecone is not None:
+        empresa.indice_pinecone = datos.indice_pinecone  # ✅ nuevo campo
+
+    db.commit()
+    return {"message": "✅ Empresa actualizada correctamente"}
+
+# Prueba de funcionamiento
 @router.get("/ping")
 def ping_empresas():
     print("✅ Router empresas funciona")

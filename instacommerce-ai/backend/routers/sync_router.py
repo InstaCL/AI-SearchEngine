@@ -10,12 +10,14 @@ router = APIRouter(prefix="/sync", tags=["Sincronización"])
 @router.post("/empresa-productos/{empresa_id}")
 def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-    if not empresa:
-        raise HTTPException(status_code=404, detail="❌ Empresa no encontrada")
+    if not empresa or not empresa.indice_pinecone:
+        raise HTTPException(status_code=404, detail="❌ Empresa o índice no encontrado")
 
     productos = fetch_products()
     if not productos:
         return {"message": "⚠️ No se encontraron productos para sincronizar"}
+
+    logs = []
 
     for producto in productos:
         insert_or_update_product(
@@ -27,11 +29,26 @@ def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
             category_name=producto["category"]["name"],
             category_slug=producto["category"]["slug"],
             image=producto["images"][0] if producto["images"] else "",
-            empresa_id=empresa_id
+            empresa_id=empresa_id,
+            index_name=empresa.indice_pinecone  # ✅ este campo faltaba
         )
 
-    return {"message": "✅ Productos sincronizados correctamente", "total": len(productos)}
+        logs.append({
+            "title": producto["title"],
+            "price": producto["price"],
+            "category": producto["category"]["name"]
+        })
+
+    return {
+        "message": f"✅ Productos sincronizados correctamente en el índice '{empresa.indice_pinecone}'",
+        "total": len(productos),
+        "productos": logs
+    }
 
 @router.delete("/empresa-productos/{empresa_id}")
-def eliminar_productos_empresa(empresa_id: int):
-    return delete_all_products_by_empresa_id(empresa_id)
+def eliminar_productos_empresa(empresa_id: int, db: Session = Depends(get_db)):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa or not empresa.indice_pinecone:
+        raise HTTPException(status_code=404, detail="❌ Empresa o índice no encontrado")
+
+    return delete_all_products_by_empresa_id(empresa_id, index_name=empresa.indice_pinecone)

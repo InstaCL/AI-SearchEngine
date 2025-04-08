@@ -20,10 +20,11 @@ class EmpresaResponse(BaseModel):
     endpoint_productos: Optional[str] = None
     api_productos_estado: Optional[str] = None
     atributos_sincronizacion: Optional[str] = None
+    indice_pinecone: Optional[str] = None  # ✅ Nuevo campo
 
     model_config = {
         "from_attributes": True
-    } 
+    }
 
 class EmpresaRegisterRequest(BaseModel):
     nombre_empresa: str
@@ -45,6 +46,7 @@ class CredencialesUpdate(BaseModel):
     api_key_openai: Optional[str] = None
     api_key_pinecone: Optional[str] = None
     endpoint_productos: Optional[str] = None
+    indice_pinecone: Optional[str] = None  # ✅ Nuevo campo para actualizar índice
 
 class EndpointProductosUpdate(BaseModel):
     endpoint_productos: str
