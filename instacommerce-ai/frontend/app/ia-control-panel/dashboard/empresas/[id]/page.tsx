@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   Box,
   Typography,
@@ -49,7 +49,7 @@ export default function EmpresaDetallePage() {
   const [productosLog, setProductosLog] = useState<ProductoLog[]>([])
   const [deleteMessage, setDeleteMessage] = useState('')
   const [progreso, setProgreso] = useState(0)
-  const [totalProductos, setTotalProductos] = useState(0)
+  const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     const fetchEmpresa = async () => {
@@ -125,41 +125,44 @@ export default function EmpresaDetallePage() {
       toast.error('❌ Faltan datos necesarios para sincronizar')
       return
     }
-  
+
     setSyncLoading(true)
     setSyncMessage('🔄 Iniciando sincronización...')
     setProductosLog([])
     setProgreso(0)
-    setTotalProductos(0)
-  
-    try {
+
+    if (wsRef.current) {
+      wsRef.current.close()
+    }
+
+    const ws = new WebSocket(`ws://localhost:8000/ws/sync/${id}`)
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      if (data.title && data.price && data.category) {
+        setProductosLog(prev => [...prev, data])
+        setProgreso(prev => Math.min(prev + 5, 100))
+      }
+    }
+
+    ws.onopen = async () => {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}`, {
         method: 'POST',
       })
-  
+
       const data = await res.json()
-  
-      if (!res.ok) throw new Error(data.detail || 'Error al sincronizar productos')
-  
-      const productos = data.productos || []
-      setProductosLog(productos)
-      setTotalProductos(productos.length)
-      setSyncMessage(`✅ ${data.message || 'Sincronización completada correctamente.'}`)
-  
-      // Simular progreso
-      let progresoActual = 0
-      const total = productos.length || 1 // para evitar división por 0
-      const intervalo = setInterval(() => {
-        progresoActual++
-        setProgreso(Math.min((progresoActual / total) * 100, 100))
-        if (progresoActual >= total) {
-          clearInterval(intervalo)
-          setSyncLoading(false)
-        }
-      }, 50)
-    } catch {
-      setSyncMessage('❌ Error al sincronizar productos')
+      if (!res.ok) {
+        setSyncMessage('❌ Error al sincronizar productos')
+      } else {
+        setSyncMessage(`✅ ${data.message || 'Sincronización completada correctamente.'}`)
+      }
+
       setSyncLoading(false)
+    }
+
+    ws.onerror = () => {
+      setSyncMessage('❌ Error en la conexión WebSocket')
     }
   }
 
