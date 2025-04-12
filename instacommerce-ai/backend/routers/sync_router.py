@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.models import Empresa
-from client.fetch_products import fetch_products
+from client.fetch_products import fetch_products, generar_texto_producto
 from pinecone_module.pinecone_manager import insert_or_update_product, delete_all_products_by_empresa_id
 from routers.ws_sync_router import websocket_connections
 import asyncio
@@ -15,30 +15,36 @@ async def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db))
     if not empresa or not empresa.indice_pinecone:
         raise HTTPException(status_code=404, detail="❌ Empresa o índice no encontrada")
 
-    productos = fetch_products()
+    # Usar el endpoint personalizado de la empresa
+    productos = fetch_products(endpoint_url=empresa.endpoint_productos)
     if not productos:
         return {"message": "⚠️ No se encontraron productos para sincronizar"}
 
     logs = []
 
     for producto in productos:
+        # Generar texto dinámico para embedding basado en atributos seleccionados
+        texto = generar_texto_producto(producto, empresa)
+        if not texto:
+            continue  # saltar productos vacíos
+
         insert_or_update_product(
-            product_id=producto["id"],
-            product_name=producto["title"],
-            description=producto["description"],
-            slug=producto["slug"],
-            price=producto["price"],
-            category_name=producto["category"]["name"],
-            category_slug=producto["category"]["slug"],
-            image=producto["images"][0] if producto["images"] else "",
+            product_id=producto.get("id"),
+            product_name=producto.get("title", ""),
+            description=texto,
+            slug=producto.get("slug", ""),
+            price=producto.get("price", 0),
+            category_name=producto.get("category", {}).get("name", ""),
+            category_slug=producto.get("category", {}).get("slug", ""),
+            image=producto.get("images", [""])[0],
             empresa_id=empresa_id,
             index_name=empresa.indice_pinecone
         )
 
         log = {
-            "title": producto["title"],
-            "price": producto["price"],
-            "category": producto["category"]["name"]
+            "title": producto.get("title", ""),
+            "price": producto.get("price", 0),
+            "category": producto.get("category", {}).get("name", "")
         }
         logs.append(log)
 
@@ -47,13 +53,13 @@ async def sync_productos_empresa(empresa_id: int, db: Session = Depends(get_db))
         if websocket:
             try:
                 await websocket.send_json(log)
-                await asyncio.sleep(0.05)  # ligera pausa opcional para no saturar
+                await asyncio.sleep(0.05)
             except:
                 pass
 
     return {
         "message": f"✅ Productos sincronizados correctamente en el índice '{empresa.indice_pinecone}'",
-        "total": len(productos),
+        "total": len(logs),
         "productos": logs
     }
 

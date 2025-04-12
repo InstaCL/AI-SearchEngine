@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON  # <- AQUI EL CAMBIO
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from sqlalchemy.orm import relationship
+import json
 
 Base = declarative_base()
 
@@ -19,9 +20,21 @@ class Empresa(Base):
     api_key_pinecone = Column(Text, nullable=True)
     endpoint_productos = Column(Text, nullable=True)
     api_productos_estado = Column(String(50), default="pendiente")
-    atributos_sincronizacion = Column(Text, nullable=True)
+    atributos_sincronizacion = Column(Text, nullable=True)  # Guardamos como JSON string
     fecha_registro = Column(DateTime, default=datetime.utcnow)
     indice_pinecone = Column(String, nullable=True)
+
+    # Métodos utilitarios para trabajar con los atributos seleccionados
+    def get_atributos_sincronizados(self):
+        if self.atributos_sincronizacion:
+            try:
+                return json.loads(self.atributos_sincronizacion)
+            except json.JSONDecodeError:
+                return []
+        return []
+
+    def set_atributos_sincronizados(self, atributos: list[str]):
+        self.atributos_sincronizacion = json.dumps(atributos)
 
 class Chat(Base):
     __tablename__ = "chats"
@@ -45,5 +58,5 @@ class HistorialConversacion(Base):
     empresa_id = Column(Integer, nullable=False)
     chat_id = Column(String, nullable=False)
     resumen = Column(Text, nullable=False)
-    productos_mencionados = Column(JSON, nullable=True)  # <- CAMBIO AQUÍ
+    productos_mencionados = Column(JSON, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)

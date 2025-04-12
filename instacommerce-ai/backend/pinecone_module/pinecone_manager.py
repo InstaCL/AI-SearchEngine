@@ -25,7 +25,7 @@ def insert_or_update_product(
 
     # 🧠 Inicializar cliente OpenAI
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    texto_para_embedding = f"{product_name}. {description}. {category_name}"
+    texto_para_embedding = description  # 🧠 Ya viene preprocesado con los atributos seleccionados
 
     try:
         response = client.embeddings.create(
