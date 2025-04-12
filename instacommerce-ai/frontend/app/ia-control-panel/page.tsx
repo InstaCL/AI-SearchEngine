@@ -27,10 +27,10 @@ const LoginPage = () => {
     setErrorMsg('') // Limpia errores anteriores
 
     try {
-      const res = await fetch(`${baseUrl}/auth/login`, {
+      const res = await fetch(`${baseUrl}/empresa/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario, password }),
+        body: JSON.stringify({ correo: usuario, password }),
       })
 
       const data = await res.json()
@@ -40,8 +40,8 @@ const LoginPage = () => {
         return
       }
 
-      // Aquí podrías guardar info en localStorage o contexto si fuera necesario
-      router.push('/ia-control-panel/dashboard')
+      localStorage.setItem("token", data.access_token)
+      router.push(`/ia-control-panel/dashboard/empresas/${data.empresa_id}`)
     } catch (error) {
       setErrorMsg('❌ No se pudo conectar al servidor')
     }
