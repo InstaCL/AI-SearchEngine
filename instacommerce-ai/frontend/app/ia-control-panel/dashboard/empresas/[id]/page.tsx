@@ -38,7 +38,6 @@ export default function EmpresaDetallePage() {
   const { id } = useParams()
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
   const [loading, setLoading] = useState(true)
-
   const [openaiKey, setOpenaiKey] = useState('')
   const [pineconeKey, setPineconeKey] = useState('')
   const [endpoint, setEndpoint] = useState('')
@@ -49,12 +48,12 @@ export default function EmpresaDetallePage() {
   const [productosLog, setProductosLog] = useState<ProductoLog[]>([])
   const [deleteMessage, setDeleteMessage] = useState('')
   const [progreso, setProgreso] = useState(0)
-  const wsRef = useRef<WebSocket | null>(null)
   const [atributosDisponibles, setAtributosDisponibles] = useState<string[]>([])
   const [atributosSeleccionados, setAtributosSeleccionados] = useState<string[]>([])
   const [totalEsperado, setTotalEsperado] = useState(0)
   const [productosRecibidos, setProductosRecibidos] = useState(0)
 
+  const wsRef = useRef<WebSocket | null>(null)
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null
 
   useEffect(() => {
@@ -95,17 +94,13 @@ export default function EmpresaDetallePage() {
     const fetchAtributos = async () => {
       try {
         const resDisponibles = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/atributos-disponibles`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
         const disponibles = await resDisponibles.json()
         setAtributosDisponibles(disponibles.atributos || [])
 
         const resSeleccionados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/atributos-seleccionados`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
         const seleccionados = await resSeleccionados.json()
         setAtributosSeleccionados(seleccionados.atributos || [])
@@ -119,19 +114,18 @@ export default function EmpresaDetallePage() {
 
   const handleGuardarAtributos = async () => {
     try {
+      if (!token) return toast.error("Token no encontrado")
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/atributos-seleccionados`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ atributos: atributosSeleccionados }),
       })
 
       if (!res.ok) throw new Error()
       toast.success('✅ Atributos guardados correctamente')
     } catch {
-      toast.error('❌ Error al guardar atributos') 
+      toast.error('❌ Error al guardar atributos')
     }
   }
 
@@ -146,7 +140,6 @@ export default function EmpresaDetallePage() {
           endpoint_productos: endpoint
         }),
       })
-
       if (!res.ok) throw new Error()
       toast.success('✅ Configuración técnica guardada')
     } catch {
@@ -159,9 +152,7 @@ export default function EmpresaDetallePage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/empresas/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          indice_pinecone: indiceSeleccionado
-        }),
+        body: JSON.stringify({ indice_pinecone: indiceSeleccionado }),
       })
       if (!res.ok) throw new Error()
       toast.success('✅ Índice guardado correctamente')
@@ -177,63 +168,49 @@ export default function EmpresaDetallePage() {
     }
   
     setSyncLoading(true)
-    setSyncMessage('🔄 Contando productos del endpoint...')
     setProductosLog([])
+    setSyncMessage('🔎 Obteniendo cantidad total de productos...')
     setProgreso(0)
     setProductosRecibidos(0)
   
     try {
-      // 1. Obtener la cantidad total de productos del endpoint de la empresa
-      const resProductos = await fetch(endpoint)
-      const productos = await resProductos.json()
+      // 🔢 1. Obtener total de productos antes de abrir WebSocket
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}/count`)
+      const info = await res.json()
   
-      if (!Array.isArray(productos)) {
-        toast.error('❌ El endpoint de productos no devuelve un arreglo válido')
+      if (!res.ok || typeof info.total !== 'number') {
+        setSyncMessage('❌ Error al obtener total de productos')
         setSyncLoading(false)
         return
       }
   
-      const total = productos.length
-      setTotalEsperado(total)
+      setTotalEsperado(info.total)
   
-      // 2. Abrir WebSocket para recibir progreso
+      // 🔌 2. Abrir WebSocket después de obtener el total
       const ws = new WebSocket(`ws://localhost:8000/ws/sync/${id}`)
       wsRef.current = ws
   
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data)
-  
-        if (data.title && data.price && data.category) {
+        if (data.title) {
           setProductosLog(prev => [...prev, data])
-  
           setProductosRecibidos(prev => {
             const nuevoTotal = prev + 1
-            const progresoCalculado = Math.min((nuevoTotal / Math.max(total, 1)) * 100, 100)
-            setProgreso(progresoCalculado)
+            setProgreso(Math.min((nuevoTotal / Math.max(info.total, 1)) * 100, 100))
             return nuevoTotal
           })
         }
       }
   
       ws.onopen = async () => {
-        // 3. Lanzar la sincronización
-        const resSync = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}`, {
-          method: 'POST',
+        setSyncMessage('⚙️ Sincronizando productos...')
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}`, {
+          method: 'POST'
         })
-  
-        const data = await resSync.json()
-        if (!resSync.ok) {
-          setSyncMessage('❌ Error al sincronizar productos')
-          setSyncLoading(false)
-          ws.close()
-          return
-        }
-  
-        setSyncMessage('✅ Sincronización en curso...')
       }
   
       ws.onerror = () => {
-        setSyncMessage('❌ Error en la conexión WebSocket')
+        setSyncMessage('❌ Error WebSocket')
         setSyncLoading(false)
       }
   
@@ -242,11 +219,12 @@ export default function EmpresaDetallePage() {
         setSyncLoading(false)
       }
   
-    } catch (err) {
-      toast.error('❌ Error al contar productos del endpoint')
+    } catch (error) {
+      toast.error('❌ Error general al contar productos o iniciar WebSocket')
+      setSyncMessage('❌ Error general de sincronización')
       setSyncLoading(false)
     }
-  }      
+  }  
 
   const handleEliminarProductos = async () => {
     if (!pineconeKey || !indiceSeleccionado) {
@@ -257,14 +235,9 @@ export default function EmpresaDetallePage() {
     setDeleteMessage('🗑️ Eliminando productos del índice...')
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}`, {
-        method: 'DELETE',
-      })
-
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync/empresa-productos/${id}`, { method: 'DELETE' })
       const data = await res.json()
-
-      if (!res.ok) throw new Error(data.detail || 'Error al eliminar productos')
-
+      if (!res.ok) throw new Error()
       setDeleteMessage(`✅ ${data.message || 'Productos eliminados correctamente.'}`)
     } catch {
       setDeleteMessage('❌ Error al eliminar productos')
@@ -278,53 +251,55 @@ export default function EmpresaDetallePage() {
       <Typography variant="h5" gutterBottom>
         Configuración Técnica - {empresa?.nombre_empresa}
       </Typography>
+      <Divider sx={{ my: 3 }} />
 
-      <Divider sx={{ my: 2 }} />
+      {/* Sección 1: Configuración API */}
+      <Box mb={4}>
+        <Typography variant="h6">🔐 Configuración API</Typography>
+        <TextField label="API Key OpenAI" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} fullWidth sx={{ mt: 2 }} />
+        <TextField label="API Key Pinecone" value={pineconeKey} onChange={(e) => setPineconeKey(e.target.value)} fullWidth sx={{ mt: 2 }} />
+        <TextField label="Endpoint de productos" value={endpoint} onChange={(e) => setEndpoint(e.target.value)} fullWidth sx={{ mt: 2 }} />
+        <Button variant="contained" sx={{ mt: 2 }} onClick={handleGuardarConfig}>Guardar configuración</Button>
+      </Box>
 
-      <Box display="flex" flexDirection="column" gap={3}>
-        <TextField label="API Key OpenAI" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} fullWidth />
-        <TextField label="API Key Pinecone" value={pineconeKey} onChange={(e) => setPineconeKey(e.target.value)} fullWidth />
-        <TextField label="Endpoint de productos" value={endpoint} onChange={(e) => setEndpoint(e.target.value)} fullWidth />
-
-        <Button variant="contained" onClick={handleGuardarConfig}>Guardar configuración</Button>
-
-        <FormControl fullWidth>
+      {/* Sección 2: Índice */}
+      <Box mb={4}>
+        <Typography variant="h6">📌 Selección de Índice</Typography>
+        <FormControl fullWidth sx={{ mt: 2 }}>
           <InputLabel>Índice de Pinecone</InputLabel>
           <Select value={indiceSeleccionado} label="Índice de Pinecone" onChange={(e) => setIndiceSeleccionado(e.target.value)}>
-            {indices.map((nombre) => (
-              <MenuItem key={nombre} value={nombre}>{nombre}</MenuItem>
-            ))}
+            {indices.map((nombre) => <MenuItem key={nombre} value={nombre}>{nombre}</MenuItem>)}
           </Select>
         </FormControl>
+        <Button variant="outlined" sx={{ mt: 2 }} onClick={handleGuardarIndice}>Guardar índice seleccionado</Button>
+      </Box>
 
-        <Box>
-          <Typography variant="h6">🧩 Atributos a sincronizar</Typography>
+      {/* Sección 3: Atributos */}
+      <Box mb={4}>
+        <Typography variant="h6">🧩 Atributos a sincronizar</Typography>
+        <Box mt={2}>
           {atributosDisponibles.map(attr => (
             <label key={attr} style={{ display: 'block' }}>
               <input
                 type="checkbox"
                 checked={atributosSeleccionados.includes(attr)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setAtributosSeleccionados(prev => [...prev, attr])
-                  } else {
-                    setAtributosSeleccionados(prev => prev.filter(a => a !== attr))
-                  }
-                }}
-              />
-              {attr}
+                onChange={(e) =>
+                  setAtributosSeleccionados(prev =>
+                    e.target.checked
+                      ? [...prev, attr]
+                      : prev.filter(a => a !== attr)
+                  )
+                }
+              /> {attr}
             </label>
           ))}
-          <Button variant="outlined" sx={{ mt: 1 }} onClick={handleGuardarAtributos}>Guardar atributos seleccionados</Button>
         </Box>
-
-        <Button variant="outlined" onClick={handleGuardarIndice}>Guardar índice seleccionado</Button>
-
-        <Button variant="contained" color="secondary" onClick={handleSincronizarProductos} disabled={syncLoading}>
+        <Button variant="outlined" sx={{ mt: 2 }} onClick={handleGuardarAtributos}>Guardar atributos seleccionados</Button>
+        <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleSincronizarProductos} disabled={syncLoading}>
           {syncLoading ? 'Sincronizando...' : 'Sincronizar productos ahora'}
         </Button>
 
-        {syncMessage && <Typography variant="body1" color="primary">{syncMessage}</Typography>}
+        {syncMessage && <Typography variant="body1" color="primary" mt={2}>{syncMessage}</Typography>}
 
         {syncLoading && (
           <Box mt={2}>
@@ -353,14 +328,15 @@ export default function EmpresaDetallePage() {
             </ul>
           </Box>
         )}
+      </Box>
 
-        <Button variant="outlined" color="error" onClick={handleEliminarProductos}>
+      {/* Sección 4: Eliminación */}
+      <Box>
+        <Typography variant="h6">🗑️ Eliminar productos</Typography>
+        <Button variant="outlined" color="error" sx={{ mt: 2 }} onClick={handleEliminarProductos}>
           Eliminar productos del índice
         </Button>
-
-        {deleteMessage && (
-          <Typography variant="body2" color="error">{deleteMessage}</Typography>
-        )}
+        {deleteMessage && <Typography variant="body2" color="error" mt={1}>{deleteMessage}</Typography>}
       </Box>
     </Paper>
   )
