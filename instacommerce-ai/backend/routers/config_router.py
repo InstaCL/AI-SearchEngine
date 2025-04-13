@@ -51,14 +51,18 @@ def obtener_atributos_disponibles(
     try:
         response = requests.get(empresa.endpoint_productos, timeout=10)
         productos = response.json()
-        if not productos or not isinstance(productos, list) or not productos[0]:
+
+        if not productos or not isinstance(productos, list):
             raise ValueError("Respuesta inválida o vacía")
 
-        primer_producto = productos[0]
-        atributos = list(primer_producto.keys())
+        atributos_set = set()
+        for producto in productos[:30]:  # Recorrer hasta 30 productos
+            if isinstance(producto, dict):
+                atributos_set.update(producto.keys())
 
+        atributos = sorted(list(atributos_set))  # ordenado opcional
         return {"atributos": atributos}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener atributos: {str(e)}")
 

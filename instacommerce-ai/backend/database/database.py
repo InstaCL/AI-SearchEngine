@@ -4,11 +4,15 @@ from database.models import Base
 import os
 
 # 🔁 Cambiar a db.sqlite3
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite3")
+SQLALCHEMY_DATABASE_URL = "sqlite:///./db.sqlite3"  # O PostgreSQL/Mysql
 
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {},
+    pool_size=20,
+    max_overflow=30,
+    pool_timeout=60,
+    pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
