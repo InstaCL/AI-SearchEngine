@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Paper,
   Divider,
+  Button,
 } from '@mui/material'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
@@ -28,6 +29,12 @@ export default function DashboardCliente() {
   const getToken = (): string | null => {
     const match = document.cookie.match(/(^| )token=([^;]+)/)
     return match ? match[2] : null
+  }
+
+  const handleLogout = () => {
+    document.cookie = 'token=; path=/; max-age=0'
+    toast.success('🚪 Sesión cerrada correctamente')
+    router.push('/login')
   }
 
   useEffect(() => {
@@ -68,7 +75,13 @@ export default function DashboardCliente() {
   if (loading) return <CircularProgress />
 
   return (
-    <Paper sx={{ p: 4 }}>
+    <Paper sx={{ p: 4, position: 'relative' }}>
+      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <Button variant="outlined" color="error" onClick={handleLogout}>
+          Cerrar sesión
+        </Button>
+      </Box>
+
       <Typography variant="h5" gutterBottom>
         Bienvenido(a) al Panel de Cliente
       </Typography>
