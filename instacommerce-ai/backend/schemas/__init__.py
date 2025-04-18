@@ -1,11 +1,10 @@
 # __init__.py para schemas/
 # Este archivo indica que este directorio es un paquete de Python
 
-# Puedes dejarlo vacío o agregar importaciones explícitas si quieres facilitar los imports
+# Importaciones desde schemas.py
 from .schemas import (
     EmpresaRequest,
     EmpresaResponse,
-    EmpresaRegisterRequest,
     LoginRequest,
     LoginResponse,
     CredencialesUpdate,
@@ -13,3 +12,5 @@ from .schemas import (
     AtributosSeleccionUpdate,
 )
 
+# Importaciones desde empresa_schema.py
+from .empresa_schema import EmpresaRegisterRequest

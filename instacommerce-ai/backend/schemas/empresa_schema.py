@@ -10,12 +10,3 @@ class EmpresaRegisterRequest(BaseModel):
 class EmpresaLoginRequest(BaseModel):
     correo: EmailStr
     password: str
-
-class LoginRequest(BaseModel):
-    correo: EmailStr
-    password: str
-
-class LoginResponse(BaseModel):
-    message: str
-    empresa_id: int
-    tipo_productos: str

@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
-from schemas.schemas import EmpresaRequest, EmpresaResponse
-from schemas.schemas import EmpresaRegisterRequest
+from schemas.empresa_schema import EmpresaRegisterRequest  # ✅ Importación corregida
 from database.models import Empresa
 from passlib.context import CryptContext
 

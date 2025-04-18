@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from config import settings
+from routers.auth_utils import obtener_empresa_actual  # ✅
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -23,10 +24,7 @@ def login_empresa(request: EmpresaLoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="❌ Empresa no registrada.")
     if not pwd_context.verify(request.password, empresa.password_hash):
         raise HTTPException(status_code=401, detail="❌ Contraseña incorrecta.")
-    if empresa.estado_pago != "aprobado":
-        raise HTTPException(status_code=403, detail="⛔ Acceso denegado: pago pendiente.")
 
-    # ✨ Crear el token JWT
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "empresa_id": empresa.id,
@@ -38,5 +36,19 @@ def login_empresa(request: EmpresaLoginRequest, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "empresa_id": empresa.id,
-        "nombre_empresa": empresa.nombre_empresa
+        "nombre_empresa": empresa.nombre_empresa,
+        "estado_pago": empresa.estado_pago,
+        "tipo_productos": empresa.tipo_productos
+    }
+
+# ✅ NUEVO ENDPOINT /empresa/perfil protegido por JWT
+@router.get("/perfil")
+def perfil_empresa(empresa: Empresa = Depends(obtener_empresa_actual)):
+    return {
+        "id": empresa.id,
+        "nombre_empresa": empresa.nombre_empresa,
+        "correo": empresa.correo,
+        "rut": empresa.rut,
+        "tipo_productos": empresa.tipo_productos,
+        "estado_pago": empresa.estado_pago,
     }
