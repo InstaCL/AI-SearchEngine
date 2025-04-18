@@ -25,10 +25,16 @@ export default function DashboardCliente() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+  const getToken = (): string | null => {
+    const match = document.cookie.match(/(^| )token=([^;]+)/)
+    return match ? match[2] : null
+  }
+
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
 
     if (!token) {
+      toast.error('⚠️ Token no encontrado')
       router.push('/login')
       return
     }
@@ -36,16 +42,19 @@ export default function DashboardCliente() {
     const fetchPerfil = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/empresa/perfil`, {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         })
 
-        if (!res.ok) throw new Error()
-
         const data = await res.json()
+
+        if (!res.ok) throw new Error(data.detail || 'Token inválido o expirado')
+
         setEmpresa(data)
-      } catch {
+      } catch (error) {
         toast.error('❌ Sesión no válida o expirada')
         router.push('/login')
       } finally {

@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Box,
-  Button,
-  Paper,
-  TextField,
-  Typography,
-  CircularProgress
-} from '@mui/material'
+import { Box, Button, CircularProgress, Paper, TextField, Typography } from '@mui/material'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,13 +9,13 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
-  correo: z.string().email({ message: "Correo inválido" }),
-  password: z.string().min(6, { message: "Mínimo 6 caracteres" }),
+  correo: z.string().email('Correo inválido'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
 })
 
 type FormData = z.infer<typeof schema>
 
-export default function LoginEmpresaPage() {
+export default function LoginAdminPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -32,26 +25,25 @@ export default function LoginEmpresaPage() {
   const onSubmit = async (data: FormData) => {
     setLoading(true)
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/empresa/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
 
       const result = await res.json()
+
       if (!res.ok || !result.access_token) {
-        throw new Error(result.detail || "Error al iniciar sesión")
+        throw new Error(result.detail || 'Error en el login')
       }
 
-      // Guardar token en cookie (middleware) y localStorage (por si se necesita)
-      document.cookie = `token=${result.access_token}; path=/; max-age=86400; SameSite=Lax`
-      localStorage.setItem('token', result.access_token)
+      // Guardar como cookie para el middleware
+      document.cookie = `admin_token=${result.access_token}; path=/; max-age=86400; SameSite=Lax`
 
-      toast.success('✅ Sesión iniciada correctamente')
-      router.push('/dashboard')
-
+      toast.success('✅ Sesión de administrador iniciada')
+      router.push('/ia-control-panel/dashboard')
     } catch (error: any) {
-      toast.error(`❌ ${error.message || 'Ocurrió un error inesperado'}`)
+      toast.error(error.message || '❌ Error al iniciar sesión')
     } finally {
       setLoading(false)
     }
@@ -59,11 +51,11 @@ export default function LoginEmpresaPage() {
 
   return (
     <Paper sx={{ maxWidth: 420, mx: 'auto', mt: 8, p: 4 }}>
-      <Typography variant="h5" gutterBottom>Iniciar Sesión - Clientes</Typography>
+      <Typography variant="h5" gutterBottom>Iniciar Sesión - Administrador</Typography>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextField
-          label="Correo corporativo"
+          label="Correo"
           fullWidth
           margin="normal"
           {...register('correo')}
