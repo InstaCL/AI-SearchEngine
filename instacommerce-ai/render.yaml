@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: instacommerce-backend
+    env: python
+    plan: free
+    buildCommand: ""  # No hace falta si ya está preinstalado
+    startCommand: ./start.sh
+    rootDir: .  # raíz del repositorio
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        sync: false
