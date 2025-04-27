@@ -13,4 +13,4 @@ else
 fi
 
 # Lanzar el servidor Uvicorn apuntando al main.py dentro de /backend
-uvicorn main:app --host 0.0.0.0 --port 10000 --app-dir backend
+uvicorn backend.main:app --host 0.0.0.0 --port 10000
