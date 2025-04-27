@@ -12,5 +12,5 @@ else
   echo "✅ Variables de entorno cargadas correctamente"
 fi
 
-# Ejecutar el servidor apuntando correctamente al backend.main
-uvicorn backend.main:app --host 0.0.0.0 --port 10000
+# Ejecutar el servidor apuntando correctamente a api.main
+uvicorn api.main:app --host 0.0.0.0 --port 10000
