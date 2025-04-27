@@ -2,8 +2,8 @@
 
 echo "📡 Iniciando servidor en el puerto 10000"
 
-# Definir el directorio base para que Python encuentre los paquetes
-export PYTHONPATH="$PYTHONPATH:$(pwd)/backend"
+# Agregar carpeta backend al PYTHONPATH
+export PYTHONPATH="$PYTHONPATH:/opt/render/project/src/backend"
 
 # Mostrar advertencia si faltan claves
 if [[ -z "$OPENAI_API_KEY" || -z "$PINECONE_API_KEY" ]]; then
@@ -12,5 +12,5 @@ else
   echo "✅ Variables de entorno cargadas correctamente"
 fi
 
-# Lanzar el servidor Uvicorn apuntando al main.py dentro de /backend
+# Ejecutar el servidor apuntando correctamente al backend.main
 uvicorn backend.main:app --host 0.0.0.0 --port 10000
