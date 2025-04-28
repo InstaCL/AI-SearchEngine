@@ -3,9 +3,9 @@ services:
     name: instacommerce-backend
     env: python
     plan: free
-    buildCommand: ""  # No hace falta si ya está preinstalado
+    region: oregon
+    buildCommand: pip install -r requirements.txt
     startCommand: ./start.sh
-    rootDir: .  # raíz del repositorio
     envVars:
       - key: OPENAI_API_KEY
         sync: false
@@ -15,3 +15,4 @@ services:
         sync: false
       - key: ALGORITHM
         sync: false
+    autoDeploy: true
