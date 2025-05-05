@@ -4,16 +4,16 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 
-from database.database import get_db
-from config import settings
-from schemas.admin_schema import AdminLoginRequest, AdminLoginResponse
-from database.models import Empresa  # Se utiliza Empresa como modelo de admin predefinido
+from backend.database.database import get_db
+from backend.config import settings
+from backend.schemas.admin_schema import AdminLoginRequest, AdminLoginResponse
+from backend.database.models import Empresa  # Se utiliza Empresa como modelo de admin predefinido
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 
-router = APIRouter(prefix="/admin", tags=["Admin Login"])
+router = APIRouter(tags=["Admin Login"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/login", response_model=AdminLoginResponse)

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
-from database.database import Base
+from backend.database.database import Base
 
 class HistorialConversacion(Base):
     __tablename__ = "historial_conversaciones"

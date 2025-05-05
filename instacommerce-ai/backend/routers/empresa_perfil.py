@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
-from database.database import get_db
-from database.models import Empresa
-from config import settings
+from backend.database.database import get_db
+from backend.database.models import Empresa
+from backend.config import settings
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="empresa/login")

@@ -1,7 +1,7 @@
 from pinecone import Pinecone
 from openai import OpenAI
-from database.database import SessionLocal
-from database.models import Empresa
+from backend.database.database import SessionLocal
+from backend.database.models import Empresa
 
 # Cargar empresa
 db = SessionLocal()

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database.database import get_db
-from database.models import Empresa
+from backend.database.database import get_db
+from backend.database.models import Empresa
 from pydantic import BaseModel
-from pinecone_module.pinecone_manager import listar_indices_disponibles
+from backend.pinecone_module.pinecone_manager import listar_indices_disponibles
 from typing import List
 from .auth_utils import obtener_empresa_actual
 import requests
@@ -85,6 +85,50 @@ def obtener_atributos_seleccionados(empresa: Empresa = Depends(obtener_empresa_a
     """
     Devuelve la lista de atributos que la empresa ha guardado para sincronizar.
     """
+    try:
+        import json
+        atributos = json.loads(empresa.atributos_sincronizacion or "[]")
+    except:
+        atributos = []
+    return {"atributos": atributos}
+
+@router.get("/admin/configuracion/atributos-disponibles/{empresa_id}")
+def obtener_atributos_disponibles_admin(
+    empresa_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Permite al panel administrador consultar los atributos de productos
+    para una empresa específica, sin necesidad de token del cliente.
+    """
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa or not empresa.endpoint_productos:
+        raise HTTPException(status_code=400, detail="Empresa no válida o sin endpoint configurado")
+
+    try:
+        response = requests.get(empresa.endpoint_productos, timeout=10)
+        productos = response.json()
+
+        if not productos or not isinstance(productos, list):
+            raise ValueError("Respuesta inválida o vacía")
+
+        atributos_set = set()
+        for producto in productos[:30]:  # hasta 30 productos
+            if isinstance(producto, dict):
+                atributos_set.update(producto.keys())
+
+        atributos = sorted(list(atributos_set))
+        return {"atributos": atributos}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener atributos: {str(e)}")
+
+@router.get("/admin/configuracion/atributos-seleccionados/{empresa_id}")
+def obtener_atributos_seleccionados_admin(empresa_id: int, db: Session = Depends(get_db)):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
     try:
         import json
         atributos = json.loads(empresa.atributos_sincronizacion or "[]")

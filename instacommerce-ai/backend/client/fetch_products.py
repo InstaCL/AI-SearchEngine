@@ -1,5 +1,5 @@
 import requests
-from database.models import Empresa
+from backend.database.models import Empresa
 
 
 def fetch_products(endpoint_url: str = "https://api.escuelajs.co/api/v1/products"):

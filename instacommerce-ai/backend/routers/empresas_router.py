@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from database.database import get_db
-from database.models import Empresa
-from schemas.schemas import EmpresaRequest, EmpresaResponse, CredencialesUpdate  # ✅ Importación extra
+from backend.database.database import get_db
+from backend.database.models import Empresa
+from backend.schemas.schemas import EmpresaRequest, EmpresaResponse, CredencialesUpdate  # ✅ Importación extra
 
 # Importar subrouters
-from routers import empresa_register, empresa_login
+from backend.routers import empresa_register, empresa_login
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 

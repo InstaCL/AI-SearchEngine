@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database.models import Base
+from backend.database.models import Base
 import os
 
 # 🔁 Cambiar a db.sqlite3

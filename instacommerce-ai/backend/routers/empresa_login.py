@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database.database import get_db
-from schemas.empresa_schema import EmpresaLoginRequest
-from database.models import Empresa
+from backend.database.database import get_db
+from backend.schemas.empresa_schema import EmpresaLoginRequest
+from backend.database.models import Empresa
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
-from config import settings
-from routers.auth_utils import obtener_empresa_actual  # ✅
+from backend.config import settings
+from backend.routers.auth_utils import obtener_empresa_actual  # ✅
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM

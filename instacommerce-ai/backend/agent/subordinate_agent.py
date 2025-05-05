@@ -1,10 +1,10 @@
 # agent/subordinate_agent.py (actualizado)
 
-from database.database import get_db
-from database.models import ChatMensaje
+from backend.database.database import get_db
+from backend.database.models import ChatMensaje
 from typing import List, Tuple
-from agent.leader_agent import validar_respuesta_subordinado
-from pinecone_module.pinecone_manager import buscar_productos_relacionados
+from backend.agent.leader_agent import validar_respuesta_subordinado
+from backend.pinecone_module.pinecone_manager import buscar_productos_relacionados
 
 def construir_respuesta_usuario(mensaje_usuario: str, contexto: List[str], empresa_id: int) -> Tuple[str, List[dict]]:
     productos = buscar_productos_relacionados(mensaje_usuario, empresa_id)
