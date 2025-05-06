@@ -1,5 +1,5 @@
 
-from backend.database.database import Base, engine
+from database.database import Base, engine
 
 print("🛠️ Creando todas las tablas...")
 Base.metadata.create_all(bind=engine)

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import date, datetime
-from backend.database.database import get_db
-from backend.database.models import Empresa, HistorialConversacion
-from backend.config import settings
+from database.database import get_db
+from database.models import Empresa, HistorialConversacion
+from config.settings import settings
 from pinecone import Pinecone
 
 router = APIRouter(tags=["Admin Métricas"])

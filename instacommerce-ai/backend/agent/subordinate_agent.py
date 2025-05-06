@@ -1,7 +1,7 @@
 # agent/subordinate_agent.py (actualizado)
 
-from backend.database.database import get_db
-from backend.database.models import ChatMensaje
+from database.database import get_db
+from database.models import ChatMensaje
 from typing import List, Tuple
 from backend.agent.leader_agent import validar_respuesta_subordinado
 from backend.pinecone_module.pinecone_manager import buscar_productos_relacionados

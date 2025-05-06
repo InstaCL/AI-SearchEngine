@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from backend.database.database import get_db
-from backend.database.models import HistorialConversacion, Empresa
+from database.database import get_db
+from database.models import HistorialConversacion, Empresa
 from backend.routers.auth_utils import obtener_empresa_actual
 from pinecone import Pinecone, ServerlessSpec
-from backend.config import settings
+from config.settings import settings
 
 router = APIRouter(prefix="/empresa", tags=["Métricas Cliente"])
 

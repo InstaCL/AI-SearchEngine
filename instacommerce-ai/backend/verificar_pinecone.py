@@ -1,7 +1,7 @@
 import os
 from pinecone import Pinecone
-from backend.database.database import SessionLocal
-from backend.database.models import Empresa
+from database.database import SessionLocal
+from database.models import Empresa
 
 # Cambia este ID según corresponda
 EMPRESA_ID = 1

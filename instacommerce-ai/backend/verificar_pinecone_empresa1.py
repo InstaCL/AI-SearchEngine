@@ -1,8 +1,8 @@
 # verificar_pinecone_empresa2.py
 
 from pinecone import Pinecone
-from backend.database.database import SessionLocal
-from backend.database.models import Empresa
+from database.database import SessionLocal
+from database.models import Empresa
 
 # Obtener las credenciales de la empresa 1
 db = SessionLocal()

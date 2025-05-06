@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.database.database import get_db
-from backend.database.models import Empresa
+from database.database import get_db
+from database.models import Empresa
 from backend.client.fetch_products import fetch_products_paginated, generar_texto_producto
 from backend.pinecone_module.pinecone_manager import insert_or_update_product, delete_all_products_by_empresa_id
 from backend.routers.ws_sync_router import websocket_connections

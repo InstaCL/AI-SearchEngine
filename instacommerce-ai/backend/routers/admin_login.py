@@ -4,10 +4,10 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 
-from backend.database.database import get_db
-from backend.config import settings
+from database.database import get_db
+from config.settings import settings
 from backend.schemas.admin_schema import AdminLoginRequest, AdminLoginResponse
-from backend.database.models import Empresa  # Se utiliza Empresa como modelo de admin predefinido
+from database.models import Empresa  # Se utiliza Empresa como modelo de admin predefinido
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM

@@ -1,8 +1,8 @@
 # test_db_connection.py
 
 from sqlalchemy.orm import Session
-from backend.database.database import SessionLocal, engine
-from backend.database.models import Empresa, Base
+from database.database import SessionLocal, engine
+from database.models import Empresa, Base
 
 def test_connection():
     try:

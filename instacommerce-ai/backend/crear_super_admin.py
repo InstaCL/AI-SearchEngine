@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from backend.database.database import SessionLocal
-from backend.database.models import Empresa
+from database.database import SessionLocal
+from database.models import Empresa
 from passlib.context import CryptContext
 
 # Configuración de encriptación

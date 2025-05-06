@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from backend.database.database import get_db
-from backend.database.models import Empresa
+from database.database import get_db
+from database.models import Empresa
 from pydantic import BaseModel, EmailStr, constr
 from passlib.hash import bcrypt
 import re

@@ -1,9 +1,9 @@
 from typing import List
 from pinecone import Pinecone
 from openai import OpenAI
-from backend.database.models import Empresa
-from backend.database.database import SessionLocal
-from backend.config import settings
+from database.models import Empresa
+from database.database import SessionLocal
+from config.settings import settings
 import tiktoken
 
 # Constantes

@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 from typing import Optional, List
 from pydantic import BaseModel
-from backend.database.database import get_db
-from backend.database.models import Chat, ChatMensaje, HistorialConversacion
+from database.database import get_db
+from database.models import Chat, ChatMensaje, HistorialConversacion
 from backend.agent.subordinate_agent import construir_respuesta_usuario
 from backend.agent.leader_agent import validar_respuesta_subordinado
 
