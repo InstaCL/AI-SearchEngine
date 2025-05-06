@@ -46,4 +46,7 @@ pip-delete-this-directory.txt
 *.swp
 
 # Archivo de configuracion y API Keys
-.env
+*.env
+
+# Frontend
+node_modules
