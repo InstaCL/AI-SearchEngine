@@ -93,24 +93,20 @@ export default function EmpresaDetallePage() {
   useEffect(() => {
     const fetchAtributos = async () => {
       try {
-        const resDisponibles = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/atributos-disponibles`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const resDisponibles = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/configuracion/atributos-disponibles/${id}`)
         const disponibles = await resDisponibles.json()
         setAtributosDisponibles(disponibles.atributos || [])
-
-        const resSeleccionados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/atributos-seleccionados`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+  
+        const resSeleccionados = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/configuracion/atributos-seleccionados/${id}`)
         const seleccionados = await resSeleccionados.json()
         setAtributosSeleccionados(seleccionados.atributos || [])
-      } catch {
-        toast.error('❌ Error al obtener los atributos')
+      } catch (error) {
+        toast.error('❌ Error al obtener los atributos de sincronización')
       }
     }
-
-    if (token) fetchAtributos()
-  }, [token])
+  
+    if (id) fetchAtributos()
+  }, [id])  
 
   const handleGuardarAtributos = async () => {
     try {
