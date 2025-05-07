@@ -4,9 +4,8 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r instacommerce_ai/backend/requirements.txt
-    startCommand: ./instacommerce_ai/start.sh
+    startCommand: PYTHONPATH=instacommerce_ai uvicorn instacommerce_ai.api.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: PORT
         value: 10000
-    autoDeploy: true
-    rootDir: instacommerce_ai
+    rootDir: .
