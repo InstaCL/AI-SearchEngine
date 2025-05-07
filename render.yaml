@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: instacommerce-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r instacommerce_ai/backend/requirements.txt
+    startCommand: ./instacommerce_ai/start.sh
+    envVars:
+      - key: PORT
+        value: 10000
+    autoDeploy: true
+    rootDir: instacommerce_ai
